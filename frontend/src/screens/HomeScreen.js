@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import {
-  View, Text, StyleSheet, FlatList, Image, TextInput,
-  TouchableOpacity, ScrollView, StatusBar, Animated,
+import { View, Text, StyleSheet, FlatList, Image, TextInput,
+  TouchableOpacity, ScrollView, StatusBar, Animated, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CATEGORIES } from '../data/menuData';
 import { useFocusEffect } from '@react-navigation/native';
 import { API_URL } from '../context/AuthContext';
@@ -26,16 +26,35 @@ function PopularChip({ item }) {
 // ─── Main HomeScreen ───────────────────────────────────────────
 export default function HomeScreen() {
   const [MENU_ITEMS, setMenuItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [activeCat, setCat] = useState('all');
   const fade = useRef(new Animated.Value(0)).current;
+
+  // Load cache on mount
+  useEffect(() => {
+    (async () => {
+      const cache = await AsyncStorage.getItem('@swadsadan_menu_cache');
+      if (cache) {
+        setMenuItems(JSON.parse(cache));
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     Animated.timing(fade, { toValue: 1, duration: 400, useNativeDriver: true }).start();
   }, []);
 
   useFocusEffect(useCallback(() => {
-    axios.get(`${API_URL}/menu`).then(res => setMenuItems(res.data)).catch(console.warn);
+    axios.get(`${API_URL}/menu`).then(async (res) => {
+      setMenuItems(res.data);
+      setLoading(false);
+      await AsyncStorage.setItem('@swadsadan_menu_cache', JSON.stringify(res.data));
+    }).catch(err => {
+      console.warn(err);
+      setLoading(false);
+    });
   }, []));
 
   const filtered = useCallback(() => {
@@ -46,7 +65,7 @@ export default function HomeScreen() {
       items = items.filter(i => i.name.toLowerCase().includes(q));
     }
     return items;
-  }, [search, activeCat]);
+  }, [search, activeCat, MENU_ITEMS]);
 
   const popular = MENU_ITEMS.filter(i => i.isPopular);
   const data = filtered();
@@ -120,7 +139,7 @@ export default function HomeScreen() {
                 <Text style={styles.sectionCount}>{popular.length} dishes</Text>
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.popRow}>
-                {popular.slice(0, 10).map(item => <PopularChip key={item.id} item={item} />)}
+                {popular.slice(0, 10).map(item => <PopularChip key={item._id} item={item} />)}
               </ScrollView>
               <View style={styles.sectionHead}>
                 <Text style={styles.sectionTitle}>All Dishes</Text>
@@ -135,10 +154,17 @@ export default function HomeScreen() {
           )
         }
         ListEmptyComponent={
-          <View style={styles.emptyWrap}>
-            <Text style={styles.emptyIcon}>🍽️</Text>
-            <Text style={styles.emptyTxt}>No dishes found</Text>
-          </View>
+          loading ? (
+            <View style={styles.emptyWrap}>
+              <ActivityIndicator size="large" color={PRIMARY} />
+              <Text style={[styles.emptyTxt, {marginTop: 10}]}>Loading fresh menu...</Text>
+            </View>
+          ) : (
+            <View style={styles.emptyWrap}>
+              <Text style={styles.emptyIcon}>🍽️</Text>
+              <Text style={styles.emptyTxt}>No dishes found</Text>
+            </View>
+          )
         }
       />
     </Animated.View>

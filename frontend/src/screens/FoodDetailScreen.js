@@ -13,7 +13,7 @@ export default function FoodDetailScreen({ route, navigation }) {
   const { item } = route.params;
   const { addToCart, updateQuantity, cartItems } = useCart();
   const price = typeof item.price === 'number' ? item.price : parseFloat(String(item.price).replace('₹',''));
-  const cartItem = cartItems.find(i => i.id === item.id);
+  const cartItem = cartItems.find(i => i._id === item._id);
   const qty = cartItem ? cartItem.quantity : 0;
 
   const fade = useRef(new Animated.Value(0)).current;
@@ -80,11 +80,11 @@ export default function FoodDetailScreen({ route, navigation }) {
                 </TouchableOpacity>
               ) : (
                 <View style={styles.qtyCtrl}>
-                  <TouchableOpacity style={styles.qtyBtn} onPress={() => { bounce(); updateQuantity(item.id, -1); }}>
+                  <TouchableOpacity style={styles.qtyBtn} onPress={() => { bounce(); updateQuantity(item._id, -1); }}>
                     <Text style={styles.qtyBtnTxt}>−</Text>
                   </TouchableOpacity>
                   <Text style={styles.qtyNum}>{qty}</Text>
-                  <TouchableOpacity style={styles.qtyBtn} onPress={() => { bounce(); updateQuantity(item.id, 1); }}>
+                  <TouchableOpacity style={styles.qtyBtn} onPress={() => { bounce(); updateQuantity(item._id, 1); }}>
                     <Text style={styles.qtyBtnTxt}>+</Text>
                   </TouchableOpacity>
                 </View>

@@ -125,6 +125,12 @@ export default function AdminOrdersScreen() {
         renderItem={renderItem}
         contentContainerStyle={styles.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={PRIMARY} />}
+        ListEmptyComponent={
+          <View style={styles.emptyWrap}>
+            <Ionicons name="receipt-outline" size={64} color="#ccc" />
+            <Text style={styles.emptyText}>No orders yet</Text>
+          </View>
+        }
       />
     </SafeAreaView>
   );
@@ -155,5 +161,7 @@ const styles = StyleSheet.create({
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   totalValue: { fontSize: 18, color: PRIMARY, fontWeight: '800' },
   actionBtn: { backgroundColor: '#1c1c1c', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
-  actionBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' }
+  actionBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  emptyWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 100 },
+  emptyText: { marginTop: 10, fontSize: 16, color: '#999', fontWeight: '600' }
 });

@@ -1,9 +1,10 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity,
-  ScrollView, StatusBar, Animated,
+  ScrollView, StatusBar, Animated, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CATEGORIES } from '../data/menuData';
 import { useFocusEffect } from '@react-navigation/native';
 import { API_URL } from '../context/AuthContext';
@@ -14,16 +15,35 @@ const PRIMARY = '#e23744';
 
 export default function MenuScreen() {
   const [MENU_ITEMS, setMenuItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [activeCat, setCat] = useState('all');
   const fade = useRef(new Animated.Value(0)).current;
+
+  // Load cache on mount
+  useEffect(() => {
+    (async () => {
+      const cache = await AsyncStorage.getItem('@swadsadan_menu_cache');
+      if (cache) {
+        setMenuItems(JSON.parse(cache));
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     Animated.timing(fade, { toValue: 1, duration: 350, useNativeDriver: true }).start();
   }, []);
 
   useFocusEffect(useCallback(() => {
-    axios.get(`${API_URL}/menu`).then(res => setMenuItems(res.data)).catch(console.warn);
+    axios.get(`${API_URL}/menu`).then(async (res) => {
+      setMenuItems(res.data);
+      setLoading(false);
+      await AsyncStorage.setItem('@swadsadan_menu_cache', JSON.stringify(res.data));
+    }).catch(err => {
+      console.warn(err);
+      setLoading(false);
+    });
   }, []));
 
   const filtered = useCallback(() => {
@@ -34,7 +54,7 @@ export default function MenuScreen() {
       items = items.filter(i => i.name.toLowerCase().includes(q));
     }
     return items;
-  }, [search, activeCat]);
+  }, [search, activeCat, MENU_ITEMS]);
 
   const data = filtered();
 
@@ -62,9 +82,21 @@ export default function MenuScreen() {
           })}
         </ScrollView>
       </SafeAreaView>
-      <FlatList data={data} keyExtractor={i=> i.id} numColumns={2} renderItem={({item})=> <GridFoodCard item={item} />}
+      <FlatList data={data} keyExtractor={i=> i._id} numColumns={2} renderItem={({item})=> <GridFoodCard item={item} />}
         contentContainerStyle={styles.grid} showsVerticalScrollIndicator={false} columnWrapperStyle={styles.colWrap}
-        ListEmptyComponent={<View style={styles.empty}><Text style={styles.emptyIcon}>🍽️</Text><Text style={styles.emptyTxt}>No items</Text></View>}
+        ListEmptyComponent={
+          loading ? (
+            <View style={styles.empty}>
+              <ActivityIndicator size="large" color={PRIMARY} />
+              <Text style={[styles.emptyTxt, {marginTop: 10}]}>Loading menu...</Text>
+            </View>
+          ) : (
+            <View style={styles.empty}>
+              <Text style={styles.emptyIcon}>🍽️</Text>
+              <Text style={styles.emptyTxt}>No items</Text>
+            </View>
+          )
+        }
       />
     </Animated.View>
   );

@@ -31,11 +31,11 @@ function CartItem({ item }) {
       </View>
       <View style={styles.itemRight}>
         <View style={styles.qtyRow}>
-          <TouchableOpacity style={styles.qtyBtn} onPress={() => { bump(); updateQuantity(item.id, -1); }}>
+          <TouchableOpacity style={styles.qtyBtn} onPress={() => { bump(); updateQuantity(item._id, -1); }}>
             <Text style={styles.qtyBtnTxt}>−</Text>
           </TouchableOpacity>
           <Text style={styles.qtyNum}>{item.quantity}</Text>
-          <TouchableOpacity style={styles.qtyBtn} onPress={() => { bump(); updateQuantity(item.id, 1); }}>
+          <TouchableOpacity style={styles.qtyBtn} onPress={() => { bump(); updateQuantity(item._id, 1); }}>
             <Text style={styles.qtyBtnTxt}>+</Text>
           </TouchableOpacity>
         </View>
@@ -65,7 +65,7 @@ export default function CartScreen() {
 
     try {
       const itemsPayload = cartItems.map(item => ({
-        id: item.id,
+        id: item._id,
         name: item.name,
         quantity: item.quantity,
         price: typeof item.price === 'number' ? item.price : parseFloat(String(item.price).replace('₹',''))
@@ -108,7 +108,7 @@ export default function CartScreen() {
         </View>
       </SafeAreaView>
 
-      <FlatList data={cartItems} keyExtractor={i=>i.id} renderItem={({item})=> <CartItem item={item} />}
+      <FlatList data={cartItems} keyExtractor={i=>i._id} renderItem={({item})=> <CartItem item={item} />}
         contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}
         ListFooterComponent={
           <View style={styles.bill}>

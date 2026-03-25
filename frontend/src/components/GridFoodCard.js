@@ -15,7 +15,7 @@ export default function GridFoodCard({ item }) {
   const btnScale = useRef(new Animated.Value(1)).current;
 
   const price = typeof item.price === 'number' ? item.price : parseFloat(String(item.price).replace('₹',''));
-  const cartItem = cartItems.find(i => i.id === item.id);
+  const cartItem = cartItems.find(i => i._id === item._id);
   const qty = cartItem ? cartItem.quantity : 0;
 
   const bounce = (ref) => {
@@ -45,9 +45,9 @@ export default function GridFoodCard({ item }) {
             </TouchableOpacity>
           ) : (
             <View style={styles.qtyRow}>
-              <TouchableOpacity style={styles.qtyBtn} onPress={() => { bounce(btnScale); updateQuantity(item.id, -1); }}><Text style={styles.qtyBtnTxt}>−</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.qtyBtn} onPress={() => { bounce(btnScale); updateQuantity(item._id, -1); }}><Text style={styles.qtyBtnTxt}>−</Text></TouchableOpacity>
               <Text style={styles.qtyNum}>{qty}</Text>
-              <TouchableOpacity style={styles.qtyBtn} onPress={() => { bounce(btnScale); updateQuantity(item.id, 1); }}><Text style={styles.qtyBtnTxt}>+</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.qtyBtn} onPress={() => { bounce(btnScale); updateQuantity(item._id, 1); }}><Text style={styles.qtyBtnTxt}>+</Text></TouchableOpacity>
             </View>
           )}
         </Animated.View>

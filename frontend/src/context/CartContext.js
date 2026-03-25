@@ -7,18 +7,18 @@ export const CartProvider = ({ children }) => {
 
   const addToCart = (item) => {
     setCartItems(prev => {
-      const existing = prev.find(i => i.id === item.id);
+      const existing = prev.find(i => i._id === item._id);
       if (existing) {
-        return prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i);
+        return prev.map(i => i._id === item._id ? { ...i, quantity: i.quantity + 1 } : i);
       }
       return [...prev, { ...item, quantity: 1 }];
     });
   };
 
-  const updateQuantity = (id, delta) => {
+  const updateQuantity = (_id, delta) => {
     setCartItems(prev => {
       return prev.reduce((acc, item) => {
-        if (item.id === id) {
+        if (item._id === _id) {
           const newQty = item.quantity + delta;
           if (newQty <= 0) return acc; // remove item
           return [...acc, { ...item, quantity: newQty }];
@@ -28,8 +28,8 @@ export const CartProvider = ({ children }) => {
     });
   };
 
-  const removeFromCart = (id) => {
-    setCartItems(prev => prev.filter(i => i.id !== id));
+  const removeFromCart = (_id) => {
+    setCartItems(prev => prev.filter(i => i._id !== _id));
   };
 
   const clearCart = () => setCartItems([]);

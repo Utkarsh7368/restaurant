@@ -14,7 +14,7 @@ export default function FoodCard({ item }) {
   const btnScale = useRef(new Animated.Value(1)).current;
 
   const price = typeof item.price === 'number' ? item.price : parseFloat(String(item.price).replace('₹',''));
-  const cartItem = cartItems.find(i => i.id === item.id);
+  const cartItem = cartItems.find(i => i._id === item._id);
   const qty = cartItem ? cartItem.quantity : 0;
 
   const bounce = (ref) => {
@@ -25,8 +25,8 @@ export default function FoodCard({ item }) {
   };
 
   const handleAdd = () => { bounce(btnScale); addToCart(item); };
-  const handlePlus = () => { bounce(btnScale); updateQuantity(item.id, 1); };
-  const handleMinus = () => { bounce(btnScale); updateQuantity(item.id, -1); };
+  const handlePlus = () => { bounce(btnScale); updateQuantity(item._id, 1); };
+  const handleMinus = () => { bounce(btnScale); updateQuantity(item._id, -1); };
 
   return (
     <TouchableOpacity
