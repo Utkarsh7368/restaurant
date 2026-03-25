@@ -21,8 +21,29 @@ export const CATEGORIES = [
   { id: 'salad', name: 'Salad & Raita', icon: '🥗' },
 ];
 
-const img = (q) => `https://images.unsplash.com/photo-${q}?w=400&q=70`;
+const CATEGORY_IMAGES = {
+  thali: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&q=70', 
+  starters: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&q=70', 
+  maincourse: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc0?w=400&q=70', 
+  dal: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&q=70', 
+  breads: 'https://images.unsplash.com/photo-1664462574881-7c4bb0e40b45?w=400&q=70', 
+  rice: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=400&q=70', 
+  salad: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&q=70', 
+  southindian: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=400&q=70', 
+  soups: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=400&q=70', 
+  noodles: 'https://images.unsplash.com/photo-1612929633738-8fe44f7ec841?w=400&q=70', 
+  chinese: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&q=70', 
+  momos: 'https://images.unsplash.com/photo-1625398407796-82650a8c135f?w=400&q=70', 
+  pizza: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&q=70', 
+  pasta: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=400&q=70', 
+  burgers: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&q=70', 
+  sandwich: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&q=70', 
+  fries: 'https://images.unsplash.com/photo-1518779578993-ec3579fee39f?w=400&q=70', 
+  shakes: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=400&q=70', 
+  mojito: 'https://images.unsplash.com/photo-1490474504059-bf2db5ab2348?w=400&q=70', 
+};
 
+const img = (q) => ''; // Mock to avoid rewriting array definitions
 export const MENU_ITEMS = [
   // THALI
   { id:'t1', name:'Regular Thali', description:'Dal Fry, Mix Veg, 4 Butter Roti, Rice, Salad', price:149, rating:4.7, image:img('1626776876729-bab4369a5a54'), tags:['thali'], isPopular:true, isRecommended:true, isVeg:true },
@@ -201,3 +222,7 @@ export const MENU_ITEMS = [
   // SWEET LASSI
   { id:'dr1', name:'Sweet Lassi', description:'Thick yoghurt with rose water and cardamom', price:80, rating:4.7, image:img('1571091718767-18b5b1457add'), tags:['shakes'], isPopular:true, isRecommended:false, isVeg:true },
 ];
+
+MENU_ITEMS.forEach(item => {
+  item.image = `https://image.pollinations.ai/prompt/${encodeURIComponent(item.name + ' delicious indian restaurant food plating photorealistic')}?width=400&height=300&nologo=true`;
+});
