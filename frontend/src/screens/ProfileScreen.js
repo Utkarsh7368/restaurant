@@ -34,7 +34,7 @@ export default function ProfileScreen() {
         <View style={styles.userCard}>
           <View style={styles.avatar}><Text style={styles.avatarTxt}>{user?.name?.[0]?.toUpperCase() || '👤'}</Text></View>
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>{user?.name || 'Guest'} {user?.isAdmin ? '(Admin)' : ''}</Text>
+            <Text style={styles.userName}>{user?.name || 'Guest'} {user?.role === 'admin' ? '(Admin)' : user?.role === 'agent' ? '(Agent)' : ''}</Text>
             <Text style={styles.userEmail}>{user?.email || ''}</Text>
           </View>
         </View>

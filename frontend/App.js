@@ -183,9 +183,9 @@ function AuthGate() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {user ? (
-        user.role === 'admin' ? (
+        (user.role === 'admin' || user.isAdmin) ? (
           <Stack.Screen name="AdminApp" component={AdminAppStack} />
-        ) : user.role === 'agent' ? (
+        ) : (user.role === 'agent') ? (
           <Stack.Screen name="AgentApp" component={AgentAppStack} />
         ) : (
           <Stack.Screen name="MainApp" component={MainAppStack} />
