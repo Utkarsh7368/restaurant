@@ -27,6 +27,7 @@ import OrdersScreen from './src/screens/OrdersScreen';
 import AdminOrdersScreen from './src/screens/admin/AdminOrdersScreen';
 import AdminMenuScreen from './src/screens/admin/AdminMenuScreen';
 import AdminProfileScreen from './src/screens/admin/AdminProfileScreen';
+import AgentOrdersScreen from './src/screens/agent/AgentOrdersScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -138,6 +139,35 @@ function AdminAppStack() {
   );
 }
 
+// ── Agent Tabs ──
+function AgentTabs() {
+  return (
+    <Tab.Navigator screenOptions={{
+      headerShown: false,
+      tabBarActiveTintColor: PRIMARY,
+      tabBarInactiveTintColor: '#bbb',
+      tabBarStyle: {
+        backgroundColor: '#fff', borderTopColor: '#f0f0f0', borderTopWidth: 0.5,
+        height: Platform.OS === 'ios' ? 84 : 60,
+        paddingBottom: Platform.OS === 'ios' ? 24 : 6, paddingTop: 6,
+      },
+      tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
+    }}>
+      <Tab.Screen name="AgentOrders" component={AgentOrdersScreen} options={{ tabBarIcon: ({focused}) => <TabIcon name="bicycle" focused={focused} />, tabBarLabel: 'Deliveries' }} />
+      <Tab.Screen name="AgentProfile" component={ProfileScreen} options={{ tabBarIcon: ({focused}) => <TabIcon name="person" focused={focused} />, tabBarLabel: 'Profile' }} />
+    </Tab.Navigator>
+  );
+}
+
+// ── Agent App Stack (Protected) ──
+function AgentAppStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="AgentTabs" component={AgentTabs} />
+    </Stack.Navigator>
+  );
+}
+
 // ── Auth Gate — decides between Login or MainAppStack ──
 function AuthGate() {
   const { user, loading } = useAuth();
@@ -153,8 +183,10 @@ function AuthGate() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {user ? (
-        user.isAdmin ? (
+        user.role === 'admin' ? (
           <Stack.Screen name="AdminApp" component={AdminAppStack} />
+        ) : user.role === 'agent' ? (
+          <Stack.Screen name="AgentApp" component={AgentAppStack} />
         ) : (
           <Stack.Screen name="MainApp" component={MainAppStack} />
         )

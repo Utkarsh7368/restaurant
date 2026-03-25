@@ -71,6 +71,15 @@ export default function OrdersScreen() {
         
         <View style={styles.divider} />
         
+        {item.deliveryAgentId && (
+          <View style={styles.agentInfo}>
+            <Ionicons name="bicycle" size={16} color={PRIMARY} />
+            <Text style={styles.agentText}>Assigned: {item.deliveryAgentId.name}</Text>
+          </View>
+        )}
+        
+        <View style={styles.divider} />
+        
         <View style={styles.cardFooter}>
           <Text style={styles.totalLabel}>Total Paid</Text>
           <Text style={styles.totalValue}>₹{item.totalAmount}</Text>
@@ -138,5 +147,7 @@ const styles = StyleSheet.create({
   totalValue: { fontSize: 18, color: PRIMARY, fontWeight: '800' },
 
   emptyWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
-  emptyText: { marginTop: 16, fontSize: 16, color: '#999', textAlign: 'center', lineHeight: 22 }
+  emptyText: { marginTop: 16, fontSize: 16, color: '#999', textAlign: 'center', lineHeight: 22 },
+  agentInfo: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f0f8ff', padding: 8, borderRadius: 8 },
+  agentText: { marginLeft: 8, fontSize: 13, fontWeight: '700', color: '#2c3e50' }
 });

@@ -11,6 +11,7 @@ const PRIMARY = '#e23744';
 export default function AdminOrdersScreen() {
   const { user, token } = useAuth();
   const [orders, setOrders] = useState([]);
+  const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -23,8 +24,36 @@ export default function AdminOrdersScreen() {
     } catch (e) {
       console.warn('Failed to fetch admin orders', e);
     } finally {
+      if (loading) fetchAgents(); // Fetch agents only once
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  const fetchAgents = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/admin/agents`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAgents(res.data || []);
+    } catch (e) {
+      console.warn('Failed to fetch agents', e);
+    }
+  };
+
+  const assignAgent = async (orderId, agentId) => {
+    const prevOrders = [...orders];
+    // Optimistic: find agent name
+    const agent = agents.find(a => a._id === agentId);
+    setOrders(prev => prev.map(o => o._id === orderId ? { ...o, deliveryAgentId: agent, status: 'preparing' } : o));
+
+    try {
+      await axios.patch(`${API_URL}/admin/order/assign/${orderId}`, { agentId }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (e) {
+      setOrders(prevOrders);
+      Alert.alert('Error', 'Failed to assign agent');
     }
   };
 
@@ -126,6 +155,26 @@ export default function AdminOrdersScreen() {
         
         <View style={styles.divider} />
 
+        <View style={styles.agentSection}>
+          <Text style={styles.sectionTitle}>Delivery Agent</Text>
+          {item.deliveryAgentId ? (
+            <View style={styles.assignedAgent}>
+              <Ionicons name="bicycle" size={20} color={PRIMARY} />
+              <Text style={styles.agentName}>{item.deliveryAgentId.name}</Text>
+            </View>
+          ) : (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.agentList}>
+              {agents.length > 0 ? agents.map(agent => (
+                <TouchableOpacity key={agent._id} style={styles.agentPill} onPress={() => assignAgent(item._id, agent._id)}>
+                  <Text style={styles.agentPillText}>{agent.name}</Text>
+                </TouchableOpacity>
+              )) : <Text style={styles.noAgents}>No agents available</Text>}
+            </ScrollView>
+          )}
+        </View>
+
+        <View style={styles.divider} />
+
         <View style={styles.cardFooter}>
           <Text style={styles.totalValue}>₹{item.totalAmount}</Text>
           <View style={{flexDirection: 'row'}}>
@@ -204,5 +253,14 @@ const styles = StyleSheet.create({
   actionBtn: { backgroundColor: '#1c1c1c', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
   actionBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
   emptyWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 100 },
-  emptyText: { marginTop: 10, fontSize: 16, color: '#999', fontWeight: '600' }
+  emptyText: { marginTop: 10, fontSize: 16, color: '#999', fontWeight: '600' },
+  
+  agentSection: { marginTop: 4 },
+  sectionTitle: { fontSize: 12, fontWeight: '700', color: '#999', marginBottom: 8, textTransform: 'uppercase' },
+  assignedAgent: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f0f8ff', padding: 10, borderRadius: 8 },
+  agentName: { marginLeft: 8, fontSize: 14, fontWeight: '700', color: '#2c3e50' },
+  agentList: { flexDirection: 'row' },
+  agentPill: { backgroundColor: '#f0f2f5', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, marginRight: 8, borderWidth: 1, borderColor: '#eee' },
+  agentPillText: { fontSize: 12, fontWeight: '600', color: '#555' },
+  noAgents: { fontSize: 12, color: '#bbb', fontStyle: 'italic' }
 });

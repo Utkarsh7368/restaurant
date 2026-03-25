@@ -1,14 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const { adminAuth } = require('../middleware/auth');
+const { verifyAdmin } = require('../middleware/auth');
+const User = require('../models/User');
 const Order = require('../models/Order');
 const Dish = require('../models/Dish');
 
 // Get all orders across the restaurant
-router.get('/orders', adminAuth, async (req, res) => {
+router.get('/orders', verifyAdmin, async (req, res) => {
   try {
     const orders = await Order.find()
          .populate('user', ['name', 'phone', 'address', 'email', 'landmark', 'lat', 'lng'])
+         .populate('deliveryAgentId', ['name', 'phone'])
          .sort({ createdAt: -1 });
     res.json(orders);
   } catch (err) {
@@ -18,7 +20,7 @@ router.get('/orders', adminAuth, async (req, res) => {
 });
 
 // Admin update order status
-router.patch('/order/:id', adminAuth, async (req, res) => {
+router.patch('/order/:id', verifyAdmin, async (req, res) => {
   try {
     const { status } = req.body;
     let order = await Order.findById(req.params.id);
@@ -39,7 +41,7 @@ router.patch('/order/:id', adminAuth, async (req, res) => {
 });
 
 // Admin update payment status
-router.patch('/order/payment/:id', adminAuth, async (req, res) => {
+router.patch('/order/payment/:id', verifyAdmin, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ msg: 'Order not found' });
@@ -57,10 +59,42 @@ router.patch('/order/payment/:id', adminAuth, async (req, res) => {
   }
 });
 
+// Get all delivery agents
+router.get('/agents', verifyAdmin, async (req, res) => {
+  try {
+    const agents = await User.find({ role: 'agent' }).select('name phone');
+    res.json(agents);
+  } catch (err) {
+    res.status(500).send('Server error');
+  }
+});
+
+// Assign agent to order
+router.patch('/order/assign/:id', verifyAdmin, async (req, res) => {
+  try {
+    const { agentId } = req.body;
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ msg: 'Order not found' });
+
+    order.deliveryAgentId = agentId;
+    // When assigned, automatically mark as preparing if it's still pending
+    if (order.status === 'pending') order.status = 'preparing';
+    
+    await order.save();
+    const updatedOrder = await Order.findById(order._id)
+      .populate('user', ['name', 'phone', 'address'])
+      .populate('deliveryAgentId', ['name', 'phone']);
+      
+    res.json(updatedOrder);
+  } catch (err) {
+    res.status(500).send('Server error');
+  }
+});
+
 // ================= MENU MANAGEMENT =================
 
 // Add new dish
-router.post('/menu', adminAuth, async (req, res) => {
+router.post('/menu', verifyAdmin, async (req, res) => {
   try {
     const dish = new Dish(req.body);
     await dish.save();
@@ -72,7 +106,7 @@ router.post('/menu', adminAuth, async (req, res) => {
 });
 
 // Update dish
-router.put('/menu/:id', adminAuth, async (req, res) => {
+router.put('/menu/:id', verifyAdmin, async (req, res) => {
   try {
     const dish = await Dish.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!dish) return res.status(404).json({ msg: 'Dish not found' });
@@ -84,7 +118,7 @@ router.put('/menu/:id', adminAuth, async (req, res) => {
 });
 
 // Delete dish
-router.delete('/menu/:id', adminAuth, async (req, res) => {
+router.delete('/menu/:id', verifyAdmin, async (req, res) => {
   try {
     const dish = await Dish.findByIdAndDelete(req.params.id);
     if (!dish) return res.status(404).json({ msg: 'Dish not found' });

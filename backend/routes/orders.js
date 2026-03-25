@@ -29,11 +29,13 @@ router.post('/create', auth, async (req, res) => {
 // Get user orders
 router.get('/user/:id', auth, async (req, res) => {
   try {
-    if (req.user.id !== req.params.id && !req.user.isAdmin) {
+    if (req.user.id !== req.params.id && req.user.role !== 'admin') {
       return res.status(401).json({ msg: 'Not authorized' });
     }
     
-    const orders = await Order.find({ user: req.params.id }).sort({ createdAt: -1 });
+    const orders = await Order.find({ user: req.params.id })
+      .populate('deliveryAgentId', ['name', 'phone'])
+      .sort({ createdAt: -1 });
     res.json(orders);
   } catch (err) {
     console.error(err.message);
