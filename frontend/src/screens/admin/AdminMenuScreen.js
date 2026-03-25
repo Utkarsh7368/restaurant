@@ -9,10 +9,12 @@ import { useAuth, API_URL } from '../../context/AuthContext';
 import axios from 'axios';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { CATEGORIES } from '../../data/menuData';
 
 const PRIMARY = '#e23744';
 
 export default function AdminMenuScreen() {
+  const { user, token } = useAuth();
   const [dishes, setDishes] = useState([]);
   const [loading, setLoading] = useState(true);
   
@@ -20,6 +22,8 @@ export default function AdminMenuScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingDish, setEditingDish] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [dishToDelete, setDishToDelete] = useState(null);
 
   // Form states
   const [name, setName] = useState('');
@@ -88,15 +92,26 @@ export default function AdminMenuScreen() {
       isVeg
     };
 
+    const prevDishes = [...dishes]; // Rollback backup
     try {
       if (editingDish) {
-        await axios.put(`${API_URL}/admin/menu/${editingDish._id}`, payload);
+        // Optimistic Update: Update the dish in the local list immediately
+        setDishes(prev => prev.map(d => d._id === editingDish._id ? { ...d, ...payload } : d));
+        closeModal();
+
+        await axios.put(`${API_URL}/admin/menu/${editingDish._id}`, payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
       } else {
-        await axios.post(`${API_URL}/admin/menu`, payload);
+        // For new dishes, we wait for the server to get the generated ID
+        await axios.post(`${API_URL}/admin/menu`, payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        fetchDishes();
+        closeModal();
       }
-      closeModal();
-      fetchDishes();
     } catch (e) {
+      setDishes(prevDishes); // Revert on failure
       Alert.alert('Error', 'Failed to save dish');
       console.warn(e);
     } finally {
@@ -104,16 +119,29 @@ export default function AdminMenuScreen() {
     }
   };
 
-  const handleDelete = (id) => {
-    Alert.alert("Delete Dish", "Are you sure you want to permanently delete this item?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: async () => {
-          try {
-            await axios.delete(`${API_URL}/admin/menu/${id}`);
-            fetchDishes();
-          } catch(e) { Alert.alert('Error', 'Failed to delete'); }
-      }}
-    ]);
+  const confirmDelete = (dish) => {
+    setDishToDelete(dish);
+    setDeleteModalVisible(true);
+  };
+
+  const handleDelete = async () => {
+    if (!dishToDelete) return;
+    
+    const id = dishToDelete._id;
+    const prevDishes = [...dishes];
+    setDishes(prev => prev.filter(d => d._id !== id));
+    setDeleteModalVisible(false);
+
+    try {
+      await axios.delete(`${API_URL}/admin/menu/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch(e) { 
+      setDishes(prevDishes);
+      Alert.alert('Error', 'Failed to delete'); 
+    } finally {
+      setDishToDelete(null);
+    }
   };
 
   const renderItem = ({ item }) => (
@@ -128,7 +156,7 @@ export default function AdminMenuScreen() {
         <TouchableOpacity onPress={() => openModal(item)} style={styles.actionBtn}>
           <Ionicons name="create-outline" size={20} color="#3498db" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleDelete(item._id)} style={[styles.actionBtn, {marginLeft: 10}]}>
+        <TouchableOpacity onPress={() => confirmDelete(item)} style={[styles.actionBtn, {marginLeft: 10}]}>
           <Ionicons name="trash-outline" size={20} color="#e74c3c" />
         </TouchableOpacity>
       </View>
@@ -171,8 +199,18 @@ export default function AdminMenuScreen() {
               <Text style={styles.label}>Description</Text>
               <TextInput style={[styles.input, {height: 80}]} value={description} onChangeText={setDescription} placeholder="Description of the dish..." multiline />
 
-              <Text style={styles.label}>Category (Tag)</Text>
-              <TextInput style={styles.input} value={category} onChangeText={setCategory} placeholder="e.g. thali, starter, main" />
+              <Text style={styles.label}>Category (Select one)*</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.catPicker}>
+                {CATEGORIES.map(cat => (
+                  <TouchableOpacity 
+                    key={cat.id} 
+                    onPress={() => setCategory(cat.id)}
+                    style={[styles.catPill, category === cat.id && styles.catPillActive]}
+                  >
+                    <Text style={[styles.catPillTxt, category === cat.id && styles.catPillTxtActive]}>{cat.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
 
               <Text style={styles.label}>Image URL</Text>
               <TextInput style={styles.input} value={image} onChangeText={setImage} placeholder="https://ex.com/img.jpg" />
@@ -193,6 +231,27 @@ export default function AdminMenuScreen() {
               <View style={{height: 40}} />
             </ScrollView>
           </KeyboardAvoidingView>
+        </View>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal animationType="fade" transparent={true} visible={deleteModalVisible} onRequestClose={() => setDeleteModalVisible(false)}>
+        <View style={styles.confirmOverlay}>
+          <View style={styles.confirmBox}>
+            <View style={styles.confirmIconWrap}>
+              <Ionicons name="warning-outline" size={40} color={PRIMARY} />
+            </View>
+            <Text style={styles.confirmTitle}>Delete Dish?</Text>
+            <Text style={styles.confirmText}>Do you want to delete this dish from your menu?</Text>
+            <View style={styles.confirmActions}>
+              <TouchableOpacity style={styles.noBtn} onPress={() => setDeleteModalVisible(false)}>
+                <Text style={styles.noBtnText}>No</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.yesBtn} onPress={handleDelete}>
+                <Text style={styles.yesBtnText}>Yes</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </Modal>
     </SafeAreaView>
@@ -226,5 +285,21 @@ const styles = StyleSheet.create({
   input: { backgroundColor: '#f0f2f5', borderRadius: 10, padding: 12, fontSize: 15, color: '#1c1c1c' },
   switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 },
   saveBtn: { backgroundColor: PRIMARY, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 30 },
-  saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' }
+  saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  catPicker: { flexDirection: 'row', marginBottom: 10 },
+  catPill: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: '#f0f2f5', marginRight: 10, borderWidth: 1, borderColor: '#eee' },
+  catPillActive: { backgroundColor: '#fce8ea', borderColor: PRIMARY },
+  catPillTxt: { fontSize: 13, color: '#666', fontWeight: '600' },
+  catPillTxtActive: { color: PRIMARY, fontWeight: '700' },
+
+  confirmOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  confirmBox: { backgroundColor: '#fff', borderRadius: 24, padding: 24, width: '100%', alignItems: 'center', maxWidth: 400 },
+  confirmIconWrap: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#fce8ea', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
+  confirmTitle: { fontSize: 22, fontWeight: '800', color: '#1c1c1c', marginBottom: 10 },
+  confirmText: { fontSize: 16, color: '#666', textAlign: 'center', marginBottom: 30, lineHeight: 22 },
+  confirmActions: { flexDirection: 'row', width: '100%' },
+  noBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, backgroundColor: '#f0f2f5', marginRight: 12, alignItems: 'center' },
+  noBtnText: { fontSize: 16, fontWeight: '700', color: '#444' },
+  yesBtn: { flex: 2, paddingVertical: 14, borderRadius: 12, backgroundColor: PRIMARY, alignItems: 'center' },
+  yesBtnText: { fontSize: 16, fontWeight: '700', color: '#fff' }
 });

@@ -73,7 +73,8 @@ export default function CartScreen() {
 
       const res = await axios.post(`${API_URL}/orders/create`, {
         items: itemsPayload,
-        totalAmount: GRAND
+        totalAmount: GRAND,
+        paymentMethod: 'COD'
       });
 
       clearCart();

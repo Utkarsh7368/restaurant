@@ -38,6 +38,25 @@ router.patch('/order/:id', adminAuth, async (req, res) => {
   }
 });
 
+// Admin update payment status
+router.patch('/order/payment/:id', adminAuth, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ msg: 'Order not found' });
+
+    order.isPaid = true;
+    await order.save();
+    
+    // repopulate user so frontend can show who ordered
+    const updatedOrder = await Order.findById(order._id).populate('user', ['name', 'phone', 'address', 'email']);
+    
+    res.json(updatedOrder);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+});
+
 // ================= MENU MANAGEMENT =================
 
 // Add new dish

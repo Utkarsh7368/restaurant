@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 const PRIMARY = '#e23744';
 
 export default function AdminOrdersScreen() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -17,10 +17,8 @@ export default function AdminOrdersScreen() {
   const fetchOrders = async () => {
     try {
       const res = await axios.get(`${API_URL}/admin/orders`, {
-        headers: { Authorization: `Bearer ${user.token}` } // Wait, AuthContext sets global headers usually, but safe to add if needed.
+        headers: { Authorization: `Bearer ${token}` }
       });
-      // AuthContext handles global axios interceptors already, so we can just do:
-      // const res = await axios.get(`${API_URL}/admin/orders`);
       setOrders(res.data || []);
     } catch (e) {
       console.warn('Failed to fetch admin orders', e);
@@ -33,7 +31,7 @@ export default function AdminOrdersScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchOrders();
-    }, [])
+    }, [token])
   );
 
   const onRefresh = () => {
@@ -42,10 +40,18 @@ export default function AdminOrdersScreen() {
   };
 
   const updateStatus = async (orderId, newStatus) => {
+    const prevOrders = [...orders]; // For rollback
+    
+    // Optimistic Update: Change status locally immediately
+    setOrders(prev => prev.map(o => o._id === orderId ? { ...o, status: newStatus } : o));
+
     try {
-      await axios.patch(`${API_URL}/admin/order/${orderId}`, { status: newStatus });
-      fetchOrders();
+      await axios.patch(`${API_URL}/admin/order/${orderId}`, { status: newStatus }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // Optionally re-fetch to ensure sync, but the optimistic state is already correct
     } catch (e) {
+      setOrders(prevOrders); // Rollback on error
       Alert.alert('Error', 'Failed to update order status');
     }
   };
@@ -64,6 +70,21 @@ export default function AdminOrdersScreen() {
     }
   };
 
+  const handleMarkAsPaid = async (orderId) => {
+    const prevOrders = [...orders];
+    // Optimistic Update
+    setOrders(prev => prev.map(o => o._id === orderId ? { ...o, isPaid: true } : o));
+
+    try {
+      await axios.patch(`${API_URL}/admin/order/payment/${orderId}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (e) {
+      setOrders(prevOrders); // Rollback
+      Alert.alert('Error', 'Failed to update payment status');
+    }
+  };
+
   const renderItem = ({ item }) => {
     const itemsString = item.items.map(i => `${i.quantity}x ${i.name}`).join(', ');
     const customer = item.user || {};
@@ -72,12 +93,22 @@ export default function AdminOrdersScreen() {
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <Text style={styles.orderId}>#{item._id.slice(-6).toUpperCase()}</Text>
-          <View style={[styles.badge, { backgroundColor: getStatusColor(item.status) }]}>
-            <Text style={styles.badgeText}>{item.status.toUpperCase()}</Text>
+          <View style={{flexDirection: 'row'}}>
+            <View style={[styles.badge, { backgroundColor: getStatusColor(item.status), marginRight: 6 }]}>
+              <Text style={styles.badgeText}>{item.status.toUpperCase()}</Text>
+            </View>
+            <View style={[styles.badge, { backgroundColor: item.isPaid ? '#2ecc71' : '#e74c3c' }]}>
+              <Text style={styles.badgeText}>{item.isPaid ? 'PAID' : 'UNPAID'}</Text>
+            </View>
           </View>
         </View>
 
-        <Text style={styles.items} numberOfLines={2}>{itemsString}</Text>
+        <Text style={styles.items}>{itemsString}</Text>
+        <View style={[styles.customerRow, {marginTop: 8}]}>
+          <Ionicons name="card-outline" size={16} color="#666" />
+          <Text style={[styles.customerText, {fontWeight: '700'}]}>Payment: {item.paymentMethod || 'COD'}</Text>
+        </View>
+
         <View style={styles.divider} />
         
         <View style={styles.customerRow}>
@@ -90,23 +121,33 @@ export default function AdminOrdersScreen() {
         </View>
         <View style={styles.customerRow}>
           <Ionicons name="location-outline" size={18} color="#666" />
-          <Text style={styles.customerText} numberOfLines={2}>{customer.address || 'No Picked Address'}</Text>
+          <Text style={styles.customerText}>{customer.address || 'No Picked Address'}</Text>
         </View>
         
         <View style={styles.divider} />
 
         <View style={styles.cardFooter}>
           <Text style={styles.totalValue}>₹{item.totalAmount}</Text>
-          {item.status !== 'delivered' && item.status !== 'cancelled' && (
-            <TouchableOpacity 
-              style={styles.actionBtn}
-              onPress={() => cycleStatus(item.status, item._id)}
-            >
-              <Text style={styles.actionBtnText}>
-                {item.status === 'pending' ? 'Mark Preparing' : 'Mark Delivered'}
-              </Text>
-            </TouchableOpacity>
-          )}
+          <View style={{flexDirection: 'row'}}>
+            {!item.isPaid && (
+              <TouchableOpacity 
+                style={[styles.actionBtn, {backgroundColor: '#2ecc71', marginRight: 8}]}
+                onPress={() => handleMarkAsPaid(item._id)}
+              >
+                <Text style={styles.actionBtnText}>Paid</Text>
+              </TouchableOpacity>
+            )}
+            {item.status !== 'delivered' && item.status !== 'cancelled' && (
+              <TouchableOpacity 
+                style={styles.actionBtn}
+                onPress={() => cycleStatus(item.status, item._id)}
+              >
+                <Text style={styles.actionBtnText}>
+                  {item.status === 'pending' ? 'Preparing' : 'Delivered'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </View>
     );
@@ -155,7 +196,7 @@ const styles = StyleSheet.create({
   items: { fontSize: 15, color: '#444', fontWeight: '500' },
   divider: { height: 1, backgroundColor: '#f0f0f0', marginVertical: 12 },
   
-  customerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+  customerRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 },
   customerText: { marginLeft: 8, fontSize: 13, color: '#555', flexShrink: 1 },
   
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

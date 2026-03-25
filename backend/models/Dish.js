@@ -12,4 +12,8 @@ const dishSchema = new mongoose.Schema({
   isVeg: { type: Boolean, default: true }
 }, { timestamps: true });
 
+dishSchema.index({ tags: 1 });
+dishSchema.index({ isPopular: 1 });
+dishSchema.index({ name: 'text' }); // For faster text search if needed later
+
 module.exports = mongoose.model('Dish', dishSchema);

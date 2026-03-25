@@ -15,7 +15,13 @@ const orderSchema = new mongoose.Schema({
     type: String, 
     enum: ['pending', 'preparing', 'delivered', 'cancelled'], 
     default: 'pending' 
-  }
+  },
+  paymentMethod: { type: String, default: 'COD' },
+  isPaid: { type: Boolean, default: false }
 }, { timestamps: true });
+
+orderSchema.index({ user: 1 });
+orderSchema.index({ status: 1 });
+orderSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('Order', orderSchema);
