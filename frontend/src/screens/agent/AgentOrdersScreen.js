@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: '#f0f0f0', marginVertical: 12 },
   row: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
   infoText: { marginLeft: 10, fontSize: 14, color: '#555', flex: 1 },
-  mapsBtn: { backgroundColor: '#1c1c1c', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 12, borderRadius: 10, marginTop: 8 },
+  mapsBtn: { backgroundColor: '#4285F4', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 14, borderRadius: 12, marginTop: 12, marginBottom: 8 },
   mapsBtnText: { color: '#fff', marginLeft: 8, fontSize: 14, fontWeight: '700' },
   actions: { flexDirection: 'row', gap: 10 },
   payBtn: { flex: 1, backgroundColor: '#f39c12', padding: 12, borderRadius: 10, alignItems: 'center' },

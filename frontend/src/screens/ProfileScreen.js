@@ -18,10 +18,10 @@ export default function ProfileScreen() {
   };
 
   const ROWS = [
-    { icon: '🛍️', label: 'My Orders', sub: 'Track and reorder meals', action: () => Alert.alert('Coming Soon', 'Order history will be available soon.') },
-    { icon: '📍', label: 'Saved Addresses', sub: 'Home, work and more', action: () => navigation.navigate('CompleteProfile') },
+    { icon: '🛍️', label: 'My Orders', sub: 'Track and reorder meals', role: 'user', action: () => navigation.navigate('Orders') },
+    { icon: '📍', label: 'Saved Addresses', sub: 'Home, work and more', role: 'user', action: () => navigation.navigate('CompleteProfile') },
     { icon: '❓', label: 'Help & Support', sub: 'Get help with orders', action: () => {} },
-  ];
+  ].filter(r => !r.role || r.role === user?.role);
 
   return (
     <View style={styles.container}>

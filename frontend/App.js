@@ -100,10 +100,15 @@ function MainAppStack() {
   const isProfileComplete = user?.phone && user?.address;
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={isProfileComplete ? "MainTabs" : "MapScreen"}>
-      <Stack.Screen name="MainTabs" component={MainTabs} />
-      <Stack.Screen name="MapScreen" component={MapScreen} options={{ gestureEnabled: false }} />
-      <Stack.Screen name="CompleteProfile" component={CompleteProfileScreen} options={{ gestureEnabled: false }} />
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {isProfileComplete ? (
+        <Stack.Screen name="MainTabs" component={MainTabs} />
+      ) : (
+        <>
+          <Stack.Screen name="MapScreen" component={MapScreen} options={{ gestureEnabled: false }} />
+          <Stack.Screen name="CompleteProfile" component={CompleteProfileScreen} options={{ gestureEnabled: false }} />
+        </>
+      )}
       <Stack.Screen name="OrderSuccess" component={OrderSuccessScreen} />
     </Stack.Navigator>
   );

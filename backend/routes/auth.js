@@ -24,7 +24,10 @@ router.post('/register', async (req, res) => {
       if (err) throw err;
       res.json({ 
         token, 
-        user: { id: user.id, name, email, phone: user.phone, role: user.role } 
+        user: { 
+          id: user.id, name, email, phone: user.phone, role: user.role,
+          address: user.address, landmark: user.landmark, lat: user.lat, lng: user.lng 
+        } 
       });
     });
   } catch (err) {
@@ -48,7 +51,10 @@ router.post('/login', async (req, res) => {
       if (err) throw err;
       res.json({ 
         token, 
-        user: { id: user.id, name: user.name, email, phone: user.phone, role: user.role } 
+        user: { 
+          id: user.id, name: user.name, email, phone: user.phone, role: user.role,
+          address: user.address, landmark: user.landmark, lat: user.lat, lng: user.lng
+        } 
       });
     });
   } catch (err) {
