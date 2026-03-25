@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "app2",
+    "name": "Swad Sadan",
     "slug": "app2",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -20,10 +20,16 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "package": "com.utkarshandroid2001.app2"
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "a2473260-6058-412e-a40d-c45e4999ea88"
+      }
     }
   }
 }

@@ -4,11 +4,13 @@ import MapView from 'react-native-maps';
 import * as Location from 'expo-location';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 
 const PRIMARY = '#e23744';
 
 export default function MapScreen() {
+  const { skipOnboarding } = useAuth();
   const navigation = useNavigation();
   const [region, setRegion] = useState({
     latitude: 28.6139,
@@ -133,7 +135,12 @@ export default function MapScreen() {
       {/* Top Banner & Custom Autocomplete Search */}
       <View style={styles.topCard}>
         <SafeAreaView edges={['top']}>
-          <Text style={styles.topTitle}>Delivery Location</Text>
+          <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12}}>
+            <Text style={styles.topTitle}>Delivery Location</Text>
+            <TouchableOpacity onPress={skipOnboarding}>
+              <Text style={{color: PRIMARY, fontWeight: '700', fontSize: 13}}>Skip for now</Text>
+            </TouchableOpacity>
+          </View>
           <View style={styles.searchBox}>
             <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
             <TextInput 

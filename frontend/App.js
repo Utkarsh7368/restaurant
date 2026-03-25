@@ -96,19 +96,19 @@ function MainTabs() {
 
 // ── Main App Stack (Protected) ──
 function MainAppStack() {
-  const { user } = useAuth();
+  const { user, hasSkipped } = useAuth();
   const isProfileComplete = user?.phone && user?.address;
+  const initialRoute = isProfileComplete || hasSkipped ? "MainTabs" : "MapScreen";
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {isProfileComplete ? (
-        <Stack.Screen name="MainTabs" component={MainTabs} />
-      ) : (
-        <>
-          <Stack.Screen name="MapScreen" component={MapScreen} options={{ gestureEnabled: false }} />
-          <Stack.Screen name="CompleteProfile" component={CompleteProfileScreen} options={{ gestureEnabled: false }} />
-        </>
-      )}
+    <Stack.Navigator 
+      key={user?.id + initialRoute} 
+      screenOptions={{ headerShown: false }} 
+      initialRouteName={initialRoute}
+    >
+      <Stack.Screen name="MainTabs" component={MainTabs} />
+      <Stack.Screen name="MapScreen" component={MapScreen} options={{ gestureEnabled: false }} />
+      <Stack.Screen name="CompleteProfile" component={CompleteProfileScreen} options={{ gestureEnabled: false }} />
       <Stack.Screen name="OrderSuccess" component={OrderSuccessScreen} />
     </Stack.Navigator>
   );

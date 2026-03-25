@@ -55,7 +55,7 @@ export default function CartScreen() {
   const handlePlaceOrder = async () => {
     if (!user?.phone || !user?.address) {
       Alert.alert('Incomplete Profile', 'Please provide a delivery address and phone number to order.', [
-        { text: 'Complete Profile', onPress: () => navigation.navigate('CompleteProfile') },
+        { text: 'Set Location', onPress: () => navigation.navigate('MapScreen') },
         { text: 'Cancel', style: 'cancel' }
       ]);
       return;

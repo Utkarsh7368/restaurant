@@ -23,13 +23,8 @@ export default function OrderSuccessScreen({ route }) {
   }, []);
 
   const handleHome = () => {
-    // Reset to MainTabs dropping the success screen from history
-    navigation.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [{ name: 'MainTabs' }],
-      })
-    );
+    // Navigate back to the main app dashboard
+    navigation.navigate('MainTabs');
   };
 
   return (

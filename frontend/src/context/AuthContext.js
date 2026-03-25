@@ -13,6 +13,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [hasSkipped, setHasSkipped] = useState(false);
 
   // Check for existing session on app start
   useEffect(() => {
@@ -79,10 +80,13 @@ export const AuthProvider = ({ children }) => {
     delete axios.defaults.headers.common['Authorization'];
     setToken(null);
     setUser(null);
+    setHasSkipped(false);
   };
 
+  const skipOnboarding = () => setHasSkipped(true);
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user, token, loading, logout, login, register, updateProfile, hasSkipped, skipOnboarding }}>
       {children}
     </AuthContext.Provider>
   );

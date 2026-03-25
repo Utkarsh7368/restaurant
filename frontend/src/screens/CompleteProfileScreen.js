@@ -62,12 +62,8 @@ export default function CompleteProfileScreen({ route, navigation }) {
         landmark, 
         houseNo 
       });
-      
-      // Successfully updated! Wiping stack and sending to Main App
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'MainTabs' }],
-      });
+      // Force navigation to MainTabs to ensure the user enters the app
+      navigation.navigate('MainTabs');
     } catch (e) {
       setError(e.message);
     }
