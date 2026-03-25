@@ -23,15 +23,6 @@ export default function ProfileScreen() {
     { icon: '❓', label: 'Help & Support', sub: 'Get help with orders', action: () => {} },
   ];
 
-  if (user?.isAdmin) {
-    ROWS.unshift({ 
-      icon: '🔐', 
-      label: 'Admin Dashboard', 
-      sub: 'Manage incoming orders', 
-      action: () => navigation.navigate('AdminDashboard') 
-    });
-  }
-
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />

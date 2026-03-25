@@ -4,7 +4,10 @@ import {
   TouchableOpacity, ScrollView, StatusBar, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MENU_ITEMS, CATEGORIES } from '../data/menuData';
+import { CATEGORIES } from '../data/menuData';
+import { useFocusEffect } from '@react-navigation/native';
+import { API_URL } from '../context/AuthContext';
+import axios from 'axios';
 import FoodCard from '../components/FoodCard';
 
 const PRIMARY = '#e23744';
@@ -22,6 +25,7 @@ function PopularChip({ item }) {
 
 // ─── Main HomeScreen ───────────────────────────────────────────
 export default function HomeScreen() {
+  const [MENU_ITEMS, setMenuItems] = useState([]);
   const [search, setSearch] = useState('');
   const [activeCat, setCat] = useState('all');
   const fade = useRef(new Animated.Value(0)).current;
@@ -29,6 +33,10 @@ export default function HomeScreen() {
   useEffect(() => {
     Animated.timing(fade, { toValue: 1, duration: 400, useNativeDriver: true }).start();
   }, []);
+
+  useFocusEffect(useCallback(() => {
+    axios.get(`${API_URL}/menu`).then(res => setMenuItems(res.data)).catch(console.warn);
+  }, []));
 
   const filtered = useCallback(() => {
     let items = MENU_ITEMS;
@@ -99,7 +107,7 @@ export default function HomeScreen() {
       {/* Content */}
       <FlatList
         data={data}
-        keyExtractor={item => item.id}
+        keyExtractor={item => item._id}
         renderItem={({ item }) => <FoodCard item={item} />}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}

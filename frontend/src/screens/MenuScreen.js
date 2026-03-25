@@ -4,12 +4,16 @@ import {
   ScrollView, StatusBar, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MENU_ITEMS, CATEGORIES } from '../data/menuData';
+import { CATEGORIES } from '../data/menuData';
+import { useFocusEffect } from '@react-navigation/native';
+import { API_URL } from '../context/AuthContext';
+import axios from 'axios';
 import GridFoodCard from '../components/GridFoodCard';
 
 const PRIMARY = '#e23744';
 
 export default function MenuScreen() {
+  const [MENU_ITEMS, setMenuItems] = useState([]);
   const [search, setSearch] = useState('');
   const [activeCat, setCat] = useState('all');
   const fade = useRef(new Animated.Value(0)).current;
@@ -17,6 +21,10 @@ export default function MenuScreen() {
   useEffect(() => {
     Animated.timing(fade, { toValue: 1, duration: 350, useNativeDriver: true }).start();
   }, []);
+
+  useFocusEffect(useCallback(() => {
+    axios.get(`${API_URL}/menu`).then(res => setMenuItems(res.data)).catch(console.warn);
+  }, []));
 
   const filtered = useCallback(() => {
     let items = MENU_ITEMS;

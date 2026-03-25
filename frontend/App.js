@@ -18,9 +18,15 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import FoodDetailScreen from './src/screens/FoodDetailScreen';
 
 // New Screens
+import MapScreen from './src/screens/MapScreen';
 import CompleteProfileScreen from './src/screens/CompleteProfileScreen';
 import OrderSuccessScreen from './src/screens/OrderSuccessScreen';
-import AdminDashboardScreen from './src/screens/AdminDashboardScreen';
+import OrdersScreen from './src/screens/OrdersScreen';
+
+// Admin Screens
+import AdminOrdersScreen from './src/screens/admin/AdminOrdersScreen';
+import AdminMenuScreen from './src/screens/admin/AdminMenuScreen';
+import AdminProfileScreen from './src/screens/admin/AdminProfileScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -80,6 +86,7 @@ function MainTabs() {
     }}>
       <Tab.Screen name="Home" component={HomeStack} options={{ tabBarIcon: ({focused}) => <TabIcon name="home" focused={focused} /> }} />
       <Tab.Screen name="Menu" component={MenuStack} options={{ tabBarIcon: ({focused}) => <TabIcon name="restaurant" focused={focused} /> }} />
+      <Tab.Screen name="Orders" component={OrdersScreen} options={{ tabBarIcon: ({focused}) => <TabIcon name="receipt" focused={focused} /> }} />
       <Tab.Screen name="Cart" component={CartScreen} options={{ tabBarIcon: ({focused}) => <CartIcon focused={focused} /> }} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarIcon: ({focused}) => <TabIcon name="person" focused={focused} /> }} />
     </Tab.Navigator>
@@ -92,11 +99,41 @@ function MainAppStack() {
   const isProfileComplete = user?.phone && user?.address;
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={isProfileComplete ? "MainTabs" : "CompleteProfile"}>
+    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={isProfileComplete ? "MainTabs" : "MapScreen"}>
       <Stack.Screen name="MainTabs" component={MainTabs} />
+      <Stack.Screen name="MapScreen" component={MapScreen} options={{ gestureEnabled: false }} />
       <Stack.Screen name="CompleteProfile" component={CompleteProfileScreen} options={{ gestureEnabled: false }} />
       <Stack.Screen name="OrderSuccess" component={OrderSuccessScreen} />
-      <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
+    </Stack.Navigator>
+  );
+}
+
+// ── Admin Tabs ──
+function AdminTabs() {
+  return (
+    <Tab.Navigator screenOptions={{
+      headerShown: false,
+      tabBarActiveTintColor: PRIMARY,
+      tabBarInactiveTintColor: '#bbb',
+      tabBarStyle: {
+        backgroundColor: '#fff', borderTopColor: '#f0f0f0', borderTopWidth: 0.5,
+        height: Platform.OS === 'ios' ? 84 : 60,
+        paddingBottom: Platform.OS === 'ios' ? 24 : 6, paddingTop: 6,
+      },
+      tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
+    }}>
+      <Tab.Screen name="AdminOrders" component={AdminOrdersScreen} options={{ tabBarIcon: ({focused}) => <TabIcon name="receipt" focused={focused} />, tabBarLabel: 'Orders' }} />
+      <Tab.Screen name="AdminMenu" component={AdminMenuScreen} options={{ tabBarIcon: ({focused}) => <TabIcon name="restaurant" focused={focused} />, tabBarLabel: 'Menu' }} />
+      <Tab.Screen name="AdminProfile" component={AdminProfileScreen} options={{ tabBarIcon: ({focused}) => <TabIcon name="shield-checkmark" focused={focused} />, tabBarLabel: 'Admin' }} />
+    </Tab.Navigator>
+  );
+}
+
+// ── Admin App Stack (Protected) ──
+function AdminAppStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="AdminTabs" component={AdminTabs} />
     </Stack.Navigator>
   );
 }
@@ -116,7 +153,11 @@ function AuthGate() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {user ? (
-        <Stack.Screen name="MainApp" component={MainAppStack} />
+        user.isAdmin ? (
+          <Stack.Screen name="AdminApp" component={AdminAppStack} />
+        ) : (
+          <Stack.Screen name="MainApp" component={MainAppStack} />
+        )
       ) : (
         <>
           <Stack.Screen name="Login" component={LoginScreen} />

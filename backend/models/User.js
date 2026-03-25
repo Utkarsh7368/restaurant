@@ -7,6 +7,9 @@ const userSchema = new mongoose.Schema({
   phone: { type: String, default: '' },
   alternatePhone: { type: String, default: '' },
   address: { type: String, default: '' },
+  landmark: { type: String, default: '' },
+  lat: { type: Number, default: 0 },
+  lng: { type: Number, default: 0 },
   isAdmin: { type: Boolean, default: false }
 }, { timestamps: true });
 
