@@ -38,8 +38,11 @@ export default function CompleteProfileScreen({ navigation }) {
     
     try {
       await updateProfile({ phone, alternatePhone: altPhone, address });
-      // Go back to main app
-      navigation.replace('MainTabs');
+      // Reset the navigation stack explicitly to ensure they cannot go back
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'MainTabs' }],
+      });
     } catch (e) {
       setError(e.message);
     }

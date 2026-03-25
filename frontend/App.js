@@ -88,10 +88,13 @@ function MainTabs() {
 
 // ── Main App Stack (Protected) ──
 function MainAppStack() {
+  const { user } = useAuth();
+  const isProfileComplete = user?.phone && user?.address;
+
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={isProfileComplete ? "MainTabs" : "CompleteProfile"}>
       <Stack.Screen name="MainTabs" component={MainTabs} />
-      <Stack.Screen name="CompleteProfile" component={CompleteProfileScreen} />
+      <Stack.Screen name="CompleteProfile" component={CompleteProfileScreen} options={{ gestureEnabled: false }} />
       <Stack.Screen name="OrderSuccess" component={OrderSuccessScreen} />
       <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
     </Stack.Navigator>
