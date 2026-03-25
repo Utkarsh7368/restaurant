@@ -7,7 +7,7 @@ const TOKEN_KEY = '@swadsadan_token';
 const USER_KEY = '@swadsadan_user';
 
 // NOTE: Replace with your actual local IP or production URL
-export const API_URL = 'http://192.168.40.13:5000/api'; 
+export const API_URL = 'https://restaurant-lovat-rho.vercel.app/'; 
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
