@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema({
   landmark: { type: String, default: '' },
   lat: { type: Number, default: 0 },
   lng: { type: Number, default: 0 },
+  role: { type: String, enum: ['user', 'admin', 'agent'], default: 'user' },
   isAdmin: { type: Boolean, default: false }
 }, { timestamps: true });
 

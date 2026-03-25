@@ -17,7 +17,9 @@ const orderSchema = new mongoose.Schema({
     default: 'pending' 
   },
   paymentMethod: { type: String, default: 'COD' },
-  isPaid: { type: Boolean, default: false }
+  isPaid: { type: Boolean, default: false },
+  deliveryAgentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  isDelivered: { type: Boolean, default: false }
 }, { timestamps: true });
 
 orderSchema.index({ user: 1 });
