@@ -23,7 +23,7 @@ export default function LoginScreen({ navigation }) {
     
     // Initialize Google Sign-in
     GoogleSignin.configure({
-      webClientId: 'REPLACE_WITH_YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
+      webClientId: '345450378654-ivc1j9dc1okifs50jb9muki6g5pf8rou.apps.googleusercontent.com',
     });
   }, []);
 
