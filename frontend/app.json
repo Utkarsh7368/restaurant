@@ -7,7 +7,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -16,8 +16,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E23744",
-        "foregroundImage": "./assets/android-icon-foreground.png"
+        "backgroundColor": "#ffffff",
+        "foregroundImage": "./assets/adaptive-foreground.png"
       },
       "package": "com.utkarshandroid2001.app2"
     },
