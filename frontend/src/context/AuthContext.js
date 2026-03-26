@@ -20,6 +20,9 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     (async () => {
       try {
+        // SILENT PING: Wakes up Vercel cold starts while loading session
+        fetch(API_URL.replace('/api', '')).catch(() => {});
+
         const storedToken = await AsyncStorage.getItem(TOKEN_KEY);
         const storedUser = await AsyncStorage.getItem(USER_KEY);
         const storedSkipped = await AsyncStorage.getItem(SKIPPED_KEY);

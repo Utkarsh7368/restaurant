@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 const PRIMARY = '#e23744';
 
 // ─── Popular chip (horizontal scroll) ──────────────────────────
-function PopularChip({ item }) {
+const PopularChip = React.memo(({ item }) => {
   const navigation = useNavigation();
   return (
     <TouchableOpacity 
@@ -27,7 +27,7 @@ function PopularChip({ item }) {
       </View>
     </TouchableOpacity>
   );
-}
+});
 
 // ─── Main HomeScreen ───────────────────────────────────────────
 export default function HomeScreen() {
@@ -138,6 +138,9 @@ export default function HomeScreen() {
         keyExtractor={item => item._id}
         renderItem={({ item }) => <FoodCard item={item} />}
         showsVerticalScrollIndicator={false}
+        initialNumToRender={5}
+        maxToRenderPerBatch={5}
+        windowSize={3}
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
           !isFiltering ? (

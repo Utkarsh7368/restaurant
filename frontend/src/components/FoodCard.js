@@ -6,7 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 
 const PRIMARY = '#e23744';
 
-export default function FoodCard({ item }) {
+export default React.memo(FoodCard);
+function FoodCard({ item }) {
   const navigation = useNavigation();
   const { addToCart, updateQuantity, cartItems } = useCart();
   const scaleVal = useRef(new Animated.Value(1)).current;

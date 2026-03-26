@@ -2,7 +2,8 @@ import React, { useState, useCallback } from 'react';
 import { 
   View, Text, StyleSheet, FlatList, ActivityIndicator, 
   TouchableOpacity, Alert, TextInput, Image, Modal, 
-  ScrollView, Switch, KeyboardAvoidingView, Platform, UIManager
+  ScrollView, Switch, KeyboardAvoidingView, Platform, UIManager,
+  SectionList
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth, API_URL } from '../../context/AuthContext';
@@ -15,6 +16,37 @@ import * as ImagePicker from 'expo-image-picker';
 const PRIMARY = '#e23744';
 const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/drby3rlmx/image/upload';
 const UPLOAD_PRESET = 'swadsadan_preset';
+
+const AdminDishCard = React.memo(({ dish, openModal, confirmDelete }) => {
+  return (
+    <View style={styles.card}>
+      {dish.image ? 
+        <Image source={{uri: dish.image}} style={styles.image} /> : 
+        <View style={[styles.image, {backgroundColor:'#f0f0f0', alignItems:'center', justifyContent:'center'}]}>
+          <Ionicons name="fast-food-outline" size={24} color="#ccc" />
+        </View>
+      }
+      <View style={styles.info}>
+        <View style={styles.nameRow}>
+          <Text style={styles.name} numberOfLines={1}>{dish.name}</Text>
+          <View style={[styles.vegIndicator, {borderColor: dish.isVeg ? '#27ae60' : '#e74c3c'}]}>
+            <View style={[styles.vegDot, {backgroundColor: dish.isVeg ? '#27ae60' : '#e74c3c'}]} />
+          </View>
+        </View>
+        <Text style={styles.price}>₹{dish.price}</Text>
+        {dish.isPopular && <View style={styles.popBadge}><Text style={styles.popText}>Popular</Text></View>}
+      </View>
+      <View style={styles.actions}>
+        <TouchableOpacity onPress={() => openModal(dish)} style={styles.editBtn}>
+          <Ionicons name="pencil-sharp" size={16} color="#444" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => confirmDelete(dish)} style={styles.delBtn}>
+          <Ionicons name="trash" size={16} color="#e53e3e" />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+});
 
 export default function AdminMenuScreen() {
   const { user, token } = useAuth();
@@ -123,16 +155,27 @@ export default function AdminMenuScreen() {
       });
       formData.append('upload_preset', UPLOAD_PRESET);
 
-      const res = await axios.post(CLOUDINARY_URL, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      // Using native fetch to COMPLETELY bypass any axios interceptors/headers
+      const response = await fetch(CLOUDINARY_URL, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Accept': 'application/json',
+          // Note: DO NOT set 'Content-Type' manually for FormData!
+        },
       });
 
-      if (res.data.secure_url) {
-        setImage(res.data.secure_url);
+      const resData = await response.json();
+
+      if (resData.secure_url) {
+        setImage(resData.secure_url);
+      } else {
+        console.error('Cloudinary Error Data:', resData);
+        Alert.alert('Upload Failed', resData.error?.message || 'Check your settings.');
       }
     } catch (e) {
-      console.error('Cloudinary Error:', e);
-      Alert.alert('Upload Failed', 'Could not upload image to cloud. Check your connection.');
+      console.error('Fetch Error:', e);
+      Alert.alert('Error', 'Network request failed.');
     } finally {
       setIsUploading(false);
     }
@@ -221,68 +264,45 @@ export default function AdminMenuScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-        <View style={styles.list}>
-          {CATEGORIES.map(cat => {
-            const catDishes = dishes.filter(d => (d.tags?.[0] || 'thali').toLowerCase() === cat.id.toLowerCase());
-            const isOpen = expandedCats.includes(cat.id);
-
-            if (catDishes.length === 0) return null;
-
-            return (
-              <View key={cat.id} style={styles.catSection}>
-                <TouchableOpacity 
-                  style={[styles.catHeader, isOpen && styles.catHeaderOpen]} 
-                  onPress={() => toggleCat(cat.id)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.catTitleRow}>
-                    <Text style={styles.catEmoji}>{cat.icon || '🍽️'}</Text>
-                    <Text style={styles.catName}>{cat.name}</Text>
-                    <View style={styles.countBadge}>
-                      <Text style={styles.countText}>{catDishes.length}</Text>
-                    </View>
-                  </View>
-                  <Ionicons name={isOpen ? "chevron-up" : "chevron-down"} size={20} color="#999" />
-                </TouchableOpacity>
-
-                {isOpen && (
-                  <View style={styles.catContent}>
-                    {catDishes.map(dish => (
-                      <View key={dish._id} style={styles.card}>
-                        {dish.image ? 
-                          <Image source={{uri: dish.image}} style={styles.image} /> : 
-                          <View style={[styles.image, {backgroundColor:'#f0f0f0', alignItems:'center', justifyContent:'center'}]}>
-                            <Ionicons name="fast-food-outline" size={24} color="#ccc" />
-                          </View>
-                        }
-                        <View style={styles.info}>
-                          <View style={styles.nameRow}>
-                            <Text style={styles.name} numberOfLines={1}>{dish.name}</Text>
-                            <View style={[styles.vegIndicator, {borderColor: dish.isVeg ? '#27ae60' : '#e74c3c'}]}>
-                              <View style={[styles.vegDot, {backgroundColor: dish.isVeg ? '#27ae60' : '#e74c3c'}]} />
-                            </View>
-                          </View>
-                          <Text style={styles.price}>₹{dish.price}</Text>
-                          {dish.isPopular && <View style={styles.popBadge}><Text style={styles.popText}>Popular</Text></View>}
-                        </View>
-                        <View style={styles.actions}>
-                          <TouchableOpacity onPress={() => openModal(dish)} style={styles.editBtn}>
-                            <Ionicons name="pencil-sharp" size={16} color="#444" />
-                          </TouchableOpacity>
-                          <TouchableOpacity onPress={() => confirmDelete(dish)} style={styles.delBtn}>
-                            <Ionicons name="trash" size={16} color="#e53e3e" />
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    ))}
-                  </View>
-                )}
+      <SectionList
+        sections={CATEGORIES.map(cat => ({
+          title: cat.name,
+          id: cat.id,
+          icon: cat.icon,
+          data: dishes.filter(d => (d.tags?.[0] || 'thali').toLowerCase() === cat.id.toLowerCase())
+        })).filter(s => s.data.length > 0)}
+        keyExtractor={(item) => item._id}
+        stickySectionHeadersEnabled={false}
+        initialNumToRender={8}
+        maxToRenderPerBatch={4}
+        windowSize={5}
+        updateCellsBatchingPeriod={50}
+        removeClippedSubviews={Platform.OS === 'android'}
+        renderSectionHeader={({ section }) => (
+          <TouchableOpacity 
+            style={[styles.catHeader, expandedCats.includes(section.id) && styles.catHeaderOpen]} 
+            onPress={() => toggleCat(section.id)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.catTitleRow}>
+              <Text style={styles.catEmoji}>{section.icon || '🍽️'}</Text>
+              <Text style={styles.catName}>{section.title}</Text>
+              <View style={styles.countBadge}>
+                <Text style={styles.countText}>{section.data.length}</Text>
               </View>
-            );
-          })}
-        </View>
-      </ScrollView>
+            </View>
+            <Ionicons name={expandedCats.includes(section.id) ? "chevron-up" : "chevron-down"} size={20} color="#999" />
+          </TouchableOpacity>
+        )}
+        renderItem={({ item, section }) => (
+          expandedCats.includes(section.id) ? (
+            <View style={{ paddingHorizontal: 20 }}>
+              <AdminDishCard dish={item} openModal={openModal} confirmDelete={confirmDelete} />
+            </View>
+          ) : null
+        )}
+        ListFooterComponent={<View style={{ height: 100 }} />}
+      />
 
       <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={closeModal}>
         <View style={styles.modalOverlay}>

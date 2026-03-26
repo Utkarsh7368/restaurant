@@ -223,6 +223,11 @@ function AuthGate() {
 
 // ── Root App ──
 export default function App() {
+  React.useEffect(() => {
+    // SILENT PING: Wakes up Vercel cold starts as soon as app opens
+    fetch('https://restaurant-lovat-rho.vercel.app/api').catch(() => {});
+  }, []);
+
   return (
     <AuthProvider>
       <CartProvider>
