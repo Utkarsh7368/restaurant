@@ -1,25 +1,31 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TextInput,
-  TouchableOpacity, ScrollView, StatusBar, Animated, ActivityIndicator,
-} from 'react-native';
+import { View, Text, StyleSheet, FlatList, Image, TextInput, TouchableOpacity, ScrollView, StatusBar, Animated, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CATEGORIES } from '../data/menuData';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { API_URL } from '../context/AuthContext';
 import axios from 'axios';
 import FoodCard from '../components/FoodCard';
+import { Ionicons } from '@expo/vector-icons';
 
 const PRIMARY = '#e23744';
 
 // ─── Popular chip (horizontal scroll) ──────────────────────────
 function PopularChip({ item }) {
+  const navigation = useNavigation();
   return (
-    <View style={styles.popChip}>
+    <TouchableOpacity 
+      style={styles.popChip} 
+      activeOpacity={0.9} 
+      onPress={() => navigation.navigate('FoodDetail', { item })}
+    >
       <Image source={{ uri: item.image }} style={styles.popImg} />
-      <Text style={styles.popName} numberOfLines={1}>{item.name}</Text>
-      <Text style={styles.popPrice}>₹{item.price}</Text>
-    </View>
+      <View style={styles.popInfo}>
+        <Text style={styles.popName} numberOfLines={1}>{item.name}</Text>
+        <Text style={styles.popPrice}>₹{item.price}</Text>
+      </View>
+    </TouchableOpacity>
   );
 }
 
@@ -80,29 +86,32 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View>
             <Text style={styles.brandName}>Swad Sadan</Text>
-            <Text style={styles.location}>📍 Auraiya, Uttar Pradesh</Text>
+            <Text style={styles.location}>📍 Auraiya • Best in Town</Text>
           </View>
-          <View style={styles.ratingPill}>
-            <Text style={styles.ratingTxt}>⭐ 5.0</Text>
-          </View>
+          <TouchableOpacity style={styles.ratingPill}>
+            <Ionicons name="star" size={14} color="#f59e0b" />
+            <Text style={styles.ratingTxt}>5.0</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Search */}
-        <View style={styles.searchWrap}>
-          <Text style={styles.searchIcon}>🔍</Text>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search dishes"
-            placeholderTextColor="#bbb"
-            value={search}
-            onChangeText={setSearch}
-            returnKeyType="search"
-          />
-          {search.length > 0 && (
-            <TouchableOpacity onPress={() => setSearch('')}>
-              <Text style={styles.clearBtn}>✕</Text>
-            </TouchableOpacity>
-          )}
+        <View style={styles.searchContainer}>
+          <View style={styles.searchWrap}>
+            <Ionicons name="search" size={18} color="#a0aec0" style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search your favorite food..."
+              placeholderTextColor="#a0aec0"
+              value={search}
+              onChangeText={setSearch}
+              returnKeyType="search"
+            />
+            {search.length > 0 && (
+              <TouchableOpacity onPress={() => setSearch('')}>
+                <Ionicons name="close-circle" size={18} color="#cbd5e0" />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {/* Categories */}
@@ -172,57 +181,65 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: '#fff' },
+  flex: { flex: 1, backgroundColor: '#fcfcfc' },
   safeTop: { backgroundColor: '#fff' },
 
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12,
+    paddingHorizontal: 20, paddingTop: 10, paddingBottom: 15,
   },
-  brandName: { fontSize: 22, fontWeight: '800', color: '#1c1c1c', letterSpacing: -0.3 },
-  location: { fontSize: 12, color: '#6b6b6b', marginTop: 2 },
+  brandName: { fontSize: 26, fontWeight: '900', color: '#1a1a1a', letterSpacing: -0.8 },
+  location: { fontSize: 13, color: '#a0aec0', fontWeight: '600', marginTop: 1 },
   ratingPill: {
-    backgroundColor: '#f0faf0', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8,
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#fffcf0', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12,
+    borderWidth: 1, borderColor: '#fef3c7'
   },
-  ratingTxt: { fontSize: 13, fontWeight: '700', color: '#27ae60' },
+  ratingTxt: { fontSize: 14, fontWeight: '800', color: '#f59e0b', marginLeft: 4 },
 
+  searchContainer: { paddingHorizontal: 20, marginBottom: 15 },
   searchWrap: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#f7f7f7', borderRadius: 14,
-    marginHorizontal: 16, paddingHorizontal: 14, height: 44, marginBottom: 12,
+    backgroundColor: '#f8fafc', borderRadius: 18,
+    paddingHorizontal: 15, height: 50,
+    borderWidth: 1, borderColor: '#edf2f7'
   },
-  searchIcon: { fontSize: 15, marginRight: 8 },
-  searchInput: { flex: 1, fontSize: 14, color: '#1c1c1c', height: '100%' },
-  clearBtn: { fontSize: 14, color: '#aaa', paddingHorizontal: 4 },
+  searchIcon: { marginRight: 10 },
+  searchInput: { flex: 1, fontSize: 15, color: '#2d3748', height: '100%', fontWeight: '500' },
 
-  catRow: { paddingHorizontal: 16, paddingBottom: 8 },
+  catRow: { paddingHorizontal: 20, paddingBottom: 15 },
   catPill: {
-    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20,
-    backgroundColor: '#f7f7f7', marginRight: 8,
+    paddingHorizontal: 18, paddingVertical: 10, borderRadius: 14,
+    backgroundColor: '#fff', marginRight: 10,
+    borderWidth: 1, borderColor: '#edf2f7',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.02, elevation: 1
   },
-  catPillActive: { backgroundColor: '#fce8ea' },
-  catTxt: { fontSize: 13, fontWeight: '600', color: '#6b6b6b' },
-  catTxtActive: { color: PRIMARY, fontWeight: '700' },
+  catPillActive: { backgroundColor: PRIMARY, borderColor: PRIMARY },
+  catTxt: { fontSize: 14, fontWeight: '700', color: '#4a5568' },
+  catTxtActive: { color: '#fff' },
 
-  listContent: { paddingBottom: 90 },
+  listContent: { paddingBottom: 100 },
 
   sectionHead: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 16, paddingTop: 16, paddingBottom: 10,
+    paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12,
   },
-  sectionTitle: { fontSize: 18, fontWeight: '800', color: '#1c1c1c' },
-  sectionCount: { fontSize: 12, color: '#aaa' },
+  sectionTitle: { fontSize: 20, fontWeight: '900', color: '#1a1a1a', letterSpacing: -0.5 },
+  sectionCount: { fontSize: 12, color: '#a0aec0', fontWeight: '700' },
 
-  popRow: { paddingLeft: 16, paddingRight: 8, paddingBottom: 8 },
+  popRow: { paddingLeft: 20, paddingRight: 10, paddingBottom: 10 },
   popChip: {
-    width: 120, marginRight: 12, backgroundColor: '#f7f7f7',
-    borderRadius: 14, overflow: 'hidden',
+    width: 140, marginRight: 15, backgroundColor: '#fff',
+    borderRadius: 20, overflow: 'hidden',
+    borderWidth: 1, borderColor: '#f0f0f0',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2
   },
-  popImg: { width: '100%', height: 80, resizeMode: 'cover' },
-  popName: { fontSize: 12, fontWeight: '700', color: '#1c1c1c', paddingHorizontal: 8, paddingTop: 6 },
-  popPrice: { fontSize: 12, fontWeight: '600', color: '#6b6b6b', paddingHorizontal: 8, paddingBottom: 8 },
+  popImg: { width: '100%', height: 86, resizeMode: 'cover' },
+  popInfo: { padding: 10 },
+  popName: { fontSize: 13, fontWeight: '800', color: '#1a1a1a', marginBottom: 2 },
+  popPrice: { fontSize: 12, fontWeight: '700', color: PRIMARY },
 
-  emptyWrap: { alignItems: 'center', paddingTop: 60 },
-  emptyIcon: { fontSize: 40, marginBottom: 10 },
-  emptyTxt: { fontSize: 16, fontWeight: '600', color: '#aaa' },
+  emptyWrap: { alignItems: 'center', paddingTop: 80 },
+  emptyIcon: { fontSize: 50, marginBottom: 15 },
+  emptyTxt: { fontSize: 18, fontWeight: '800', color: '#cbd5e0' },
 });

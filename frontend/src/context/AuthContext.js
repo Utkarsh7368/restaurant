@@ -5,6 +5,7 @@ import axios from 'axios';
 const AuthContext = createContext();
 const TOKEN_KEY = '@swadsadan_token';
 const USER_KEY = '@swadsadan_user';
+const SKIPPED_KEY = '@swadsadan_skipped';
 
 // NOTE: Replace with your actual local IP or production URL
 export const API_URL = 'https://restaurant-lovat-rho.vercel.app/api'; 
@@ -21,12 +22,15 @@ export const AuthProvider = ({ children }) => {
       try {
         const storedToken = await AsyncStorage.getItem(TOKEN_KEY);
         const storedUser = await AsyncStorage.getItem(USER_KEY);
+        const storedSkipped = await AsyncStorage.getItem(SKIPPED_KEY);
         
         if (storedToken && storedUser) {
           setToken(storedToken);
           setUser(JSON.parse(storedUser));
-          // Set auth header for future axios calls
           axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+        }
+        if (storedSkipped === 'true') {
+          setHasSkipped(true);
         }
       } catch (e) { console.warn(e); }
       setLoading(false);
@@ -36,6 +40,9 @@ export const AuthProvider = ({ children }) => {
   const saveAuthInfo = async (tkn, usr) => {
     await AsyncStorage.setItem(TOKEN_KEY, tkn);
     await AsyncStorage.setItem(USER_KEY, JSON.stringify(usr));
+    // Reset skip state on new login so we can re-check their profile
+    await AsyncStorage.removeItem(SKIPPED_KEY);
+    setHasSkipped(false);
     setToken(tkn);
     setUser(usr);
     axios.defaults.headers.common['Authorization'] = `Bearer ${tkn}`;
@@ -87,13 +94,17 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     await AsyncStorage.removeItem(TOKEN_KEY);
     await AsyncStorage.removeItem(USER_KEY);
+    await AsyncStorage.removeItem(SKIPPED_KEY);
     delete axios.defaults.headers.common['Authorization'];
     setToken(null);
     setUser(null);
     setHasSkipped(false);
   };
 
-  const skipOnboarding = () => setHasSkipped(true);
+  const skipOnboarding = async () => {
+    await AsyncStorage.setItem(SKIPPED_KEY, 'true');
+    setHasSkipped(true);
+  };
 
   return (
     <AuthContext.Provider value={{ user, token, loading, logout, login, register, googleLogin, updateProfile, hasSkipped, skipOnboarding }}>

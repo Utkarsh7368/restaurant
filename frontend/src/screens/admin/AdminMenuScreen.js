@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { 
   View, Text, StyleSheet, FlatList, ActivityIndicator, 
   TouchableOpacity, Alert, TextInput, Image, Modal, 
-  ScrollView, Switch, KeyboardAvoidingView, Platform
+  ScrollView, Switch, KeyboardAvoidingView, Platform, UIManager
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth, API_URL } from '../../context/AuthContext';
@@ -10,8 +10,11 @@ import axios from 'axios';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { CATEGORIES } from '../../data/menuData';
+import * as ImagePicker from 'expo-image-picker';
 
 const PRIMARY = '#e23744';
+const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/drby3rlmx/image/upload';
+const UPLOAD_PRESET = 'swadsadan_preset';
 
 export default function AdminMenuScreen() {
   const { user, token } = useAuth();
@@ -24,6 +27,15 @@ export default function AdminMenuScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [dishToDelete, setDishToDelete] = useState(null);
+  const [expandedCats, setExpandedCats] = useState(['thali']); 
+  const [isUploading, setIsUploading] = useState(false);
+
+  const toggleCat = (catId) => {
+    // LayoutAnimation is a no-op in New Architecture, keeping it simple
+    setExpandedCats(prev => 
+      prev.includes(catId) ? prev.filter(c => c !== catId) : [...prev, catId]
+    );
+  };
 
   // Form states
   const [name, setName] = useState('');
@@ -73,6 +85,57 @@ export default function AdminMenuScreen() {
   const closeModal = () => {
     setModalVisible(false);
     setEditingDish(null);
+    setIsUploading(false);
+  };
+
+  const handlePickImage = async (useCamera = false) => {
+    try {
+      const permission = useCamera 
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permission.granted) {
+        Alert.alert('Permission Denied', `We need ${useCamera ? 'camera' : 'gallery'} access to upload dish photos.`);
+        return;
+      }
+
+      const result = useCamera 
+        ? await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [4, 3], quality: 0.7 })
+        : await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, aspect: [4, 3], quality: 0.7 });
+
+      if (!result.canceled) {
+        uploadToCloudinary(result.assets[0].uri);
+      }
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Error', 'Failed to open image selector');
+    }
+  };
+
+  const uploadToCloudinary = async (uri) => {
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', {
+        uri: Platform.OS === 'android' ? uri : uri.replace('file://', ''),
+        type: 'image/jpeg',
+        name: 'upload.jpg',
+      });
+      formData.append('upload_preset', UPLOAD_PRESET);
+
+      const res = await axios.post(CLOUDINARY_URL, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      if (res.data.secure_url) {
+        setImage(res.data.secure_url);
+      }
+    } catch (e) {
+      console.error('Cloudinary Error:', e);
+      Alert.alert('Upload Failed', 'Could not upload image to cloud. Check your connection.');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -144,42 +207,82 @@ export default function AdminMenuScreen() {
     }
   };
 
-  const renderItem = ({ item }) => (
-    <View style={styles.card}>
-      {item.image ? <Image source={{uri: item.image}} style={styles.image} /> : <View style={[styles.image, {backgroundColor:'#eee'}]} />}
-      <View style={styles.info}>
-        <Text style={styles.name}>{item.name} {item.isVeg ? '🟢' : '🔴'}</Text>
-        <Text style={styles.price}>₹{item.price}</Text>
-        <Text style={styles.cat}>{item.tags?.[0] || 'Uncategorized'}</Text>
-      </View>
-      <View style={styles.actions}>
-        <TouchableOpacity onPress={() => openModal(item)} style={styles.actionBtn}>
-          <Ionicons name="create-outline" size={20} color="#3498db" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => confirmDelete(item)} style={[styles.actionBtn, {marginLeft: 10}]}>
-          <Ionicons name="trash-outline" size={20} color="#e74c3c" />
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-
   if (loading) return <SafeAreaView style={styles.center}><ActivityIndicator size="large" color={PRIMARY} /></SafeAreaView>;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Menu Management</Text>
-        <TouchableOpacity style={styles.addBtn} onPress={() => openModal()}>
-          <Ionicons name="add" size={24} color="#fff" />
+        <View>
+          <Text style={styles.title}>Menu Management</Text>
+          <Text style={styles.subtitle}>Manage your restaurant's identity</Text>
+        </View>
+        <TouchableOpacity style={styles.addBtn} onPress={() => openModal()} activeOpacity={0.8}>
+          <Ionicons name="add" size={28} color="#fff" />
         </TouchableOpacity>
       </View>
-      
-      <FlatList
-        data={dishes}
-        keyExtractor={item => item._id}
-        renderItem={renderItem}
-        contentContainerStyle={styles.list}
-      />
+
+      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+        <View style={styles.list}>
+          {CATEGORIES.map(cat => {
+            const catDishes = dishes.filter(d => (d.tags?.[0] || 'thali').toLowerCase() === cat.id.toLowerCase());
+            const isOpen = expandedCats.includes(cat.id);
+
+            if (catDishes.length === 0) return null;
+
+            return (
+              <View key={cat.id} style={styles.catSection}>
+                <TouchableOpacity 
+                  style={[styles.catHeader, isOpen && styles.catHeaderOpen]} 
+                  onPress={() => toggleCat(cat.id)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.catTitleRow}>
+                    <Text style={styles.catEmoji}>{cat.icon || '🍽️'}</Text>
+                    <Text style={styles.catName}>{cat.name}</Text>
+                    <View style={styles.countBadge}>
+                      <Text style={styles.countText}>{catDishes.length}</Text>
+                    </View>
+                  </View>
+                  <Ionicons name={isOpen ? "chevron-up" : "chevron-down"} size={20} color="#999" />
+                </TouchableOpacity>
+
+                {isOpen && (
+                  <View style={styles.catContent}>
+                    {catDishes.map(dish => (
+                      <View key={dish._id} style={styles.card}>
+                        {dish.image ? 
+                          <Image source={{uri: dish.image}} style={styles.image} /> : 
+                          <View style={[styles.image, {backgroundColor:'#f0f0f0', alignItems:'center', justifyContent:'center'}]}>
+                            <Ionicons name="fast-food-outline" size={24} color="#ccc" />
+                          </View>
+                        }
+                        <View style={styles.info}>
+                          <View style={styles.nameRow}>
+                            <Text style={styles.name} numberOfLines={1}>{dish.name}</Text>
+                            <View style={[styles.vegIndicator, {borderColor: dish.isVeg ? '#27ae60' : '#e74c3c'}]}>
+                              <View style={[styles.vegDot, {backgroundColor: dish.isVeg ? '#27ae60' : '#e74c3c'}]} />
+                            </View>
+                          </View>
+                          <Text style={styles.price}>₹{dish.price}</Text>
+                          {dish.isPopular && <View style={styles.popBadge}><Text style={styles.popText}>Popular</Text></View>}
+                        </View>
+                        <View style={styles.actions}>
+                          <TouchableOpacity onPress={() => openModal(dish)} style={styles.editBtn}>
+                            <Ionicons name="pencil-sharp" size={16} color="#444" />
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => confirmDelete(dish)} style={styles.delBtn}>
+                            <Ionicons name="trash" size={16} color="#e53e3e" />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+            );
+          })}
+        </View>
+      </ScrollView>
 
       <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={closeModal}>
         <View style={styles.modalOverlay}>
@@ -212,7 +315,36 @@ export default function AdminMenuScreen() {
                 ))}
               </ScrollView>
 
-              <Text style={styles.label}>Image URL</Text>
+              <Text style={styles.label}>Dish Image*</Text>
+              <View style={styles.imagePickerContainer}>
+                {image ? (
+                  <View style={styles.previewWrap}>
+                    <Image source={{ uri: image }} style={styles.formImagePreview} />
+                    <TouchableOpacity style={styles.removeImgBtn} onPress={() => setImage('')}>
+                      <Ionicons name="close-circle" size={24} color="#ef4444" />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View style={styles.imageOptionsRow}>
+                    <TouchableOpacity style={styles.imageOption} onPress={() => handlePickImage(false)}>
+                      <View style={styles.imageIconWrap}><Ionicons name="images-outline" size={28} color={PRIMARY} /></View>
+                      <Text style={styles.imageOptionTxt}>Gallery</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.imageOption} onPress={() => handlePickImage(true)}>
+                      <View style={styles.imageIconWrap}><Ionicons name="camera-outline" size={28} color={PRIMARY} /></View>
+                      <Text style={styles.imageOptionTxt}>Camera</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+                {isUploading && (
+                  <View style={styles.uploadOverlay}>
+                    <ActivityIndicator color={PRIMARY} size="small" />
+                    <Text style={styles.uploadTxt}>Uploading...</Text>
+                  </View>
+                )}
+              </View>
+
+              <Text style={styles.label}>Manual Image URL (Optional)</Text>
               <TextInput style={styles.input} value={image} onChangeText={setImage} placeholder="https://ex.com/img.jpg" />
 
               <View style={styles.switchRow}>
@@ -260,37 +392,123 @@ export default function AdminMenuScreen() {
 
 const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  container: { flex: 1, backgroundColor: '#f9f9f9' },
-  header: { padding: 20, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#eee', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { fontSize: 24, fontWeight: '800', color: '#1c1c1c' },
-  addBtn: { backgroundColor: PRIMARY, width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  container: { flex: 1, backgroundColor: '#fcfcfc' },
+  header: { 
+    paddingHorizontal: 20, 
+    paddingTop: 15, 
+    paddingBottom: 20, 
+    backgroundColor: '#fff', 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0'
+  },
+  title: { fontSize: 26, fontWeight: '900', color: '#1a1a1a', letterSpacing: -0.5 },
+  addBtn: { 
+    backgroundColor: PRIMARY, 
+    width: 48, 
+    height: 48, 
+    borderRadius: 16, 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    shadowColor: PRIMARY,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6
+  },
   
-  list: { padding: 16 },
-  card: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 12, padding: 12, marginBottom: 12, alignItems: 'center', shadowColor: '#000', shadowOffset: {width:0, height:2}, shadowOpacity: 0.05, elevation: 2 },
-  image: { width: 60, height: 60, borderRadius: 8, marginRight: 12, resizeMode: 'cover' },
-  info: { flex: 1 },
-  name: { fontSize: 16, fontWeight: '700', color: '#1c1c1c', marginBottom: 4 },
-  price: { fontSize: 14, color: PRIMARY, fontWeight: '800' },
-  cat: { fontSize: 12, color: '#999', marginTop: 4, textTransform: 'capitalize' },
-  actions: { flexDirection: 'row' },
-  actionBtn: { padding: 8, backgroundColor: '#f0f4f8', borderRadius: 8 },
+  scroll: { flex: 1 },
+  list: { padding: 20 },
+  
+  catSection: { marginBottom: 16, borderRadius: 20, backgroundColor: '#fff', overflow: 'hidden', borderWidth: 1, borderColor: '#f0f0f0' },
+  catHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    padding: 16,
+    backgroundColor: '#fff'
+  },
+  catHeaderOpen: { borderBottomWidth: 1, borderBottomColor: '#f9f9f9' },
+  catTitleRow: { flexDirection: 'row', alignItems: 'center' },
+  catEmoji: { fontSize: 18, marginRight: 10 },
+  catName: { fontSize: 17, fontWeight: '800', color: '#1a1a1a' },
+  countBadge: { backgroundColor: '#f0f0f0', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, marginLeft: 10 },
+  countText: { fontSize: 12, fontWeight: '700', color: '#888' },
+  
+  catContent: { padding: 12, backgroundColor: '#fafafa' },
+  
+  card: { 
+    flexDirection: 'row', 
+    backgroundColor: '#fff', 
+    borderRadius: 16, 
+    padding: 12, 
+    marginBottom: 10, 
+    alignItems: 'center', 
+    borderWidth: 1, 
+    borderColor: '#f0f0f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.02,
+    elevation: 1
+  },
+  image: { width: 60, height: 60, borderRadius: 12, marginRight: 14, resizeMode: 'cover' },
+  info: { flex: 1, paddingRight: 8 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },
+  name: { fontSize: 15, fontWeight: '700', color: '#1a1a1a', marginRight: 8, maxWidth: '85%' },
+  vegIndicator: { width: 12, height: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 2 },
+  vegDot: { width: 5, height: 5, borderRadius: 2.5 },
+  price: { fontSize: 14, color: PRIMARY, fontWeight: '900' },
+  popBadge: { backgroundColor: '#fff8e1', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, alignSelf: 'flex-start', marginTop: 4 },
+  popText: { fontSize: 10, fontWeight: '800', color: '#ff8f00', textTransform: 'uppercase' },
+  
+  actions: { flexDirection: 'row', alignItems: 'center', marginLeft: 'auto' },
+  editBtn: { width: 30, height: 30, borderRadius: 8, backgroundColor: '#ebf8ff', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#bee3f8' },
+  delBtn: { width: 30, height: 30, borderRadius: 8, backgroundColor: '#fff5f5', alignItems: 'center', justifyContent: 'center', marginLeft: 8, borderWidth: 1, borderColor: '#fed7d7' },
 
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, height: '85%', padding: 20 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  modalTitle: { fontSize: 20, fontWeight: '800', color: '#1c1c1c' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 32, borderTopRightRadius: 32, height: '90%', padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.1, shadowRadius: 20 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
+  modalTitle: { fontSize: 24, fontWeight: '900', color: '#1a1a1a', letterSpacing: -0.5 },
   
   form: { flex: 1 },
-  label: { fontSize: 14, fontWeight: '700', color: '#555', marginBottom: 8, marginTop: 12 },
-  input: { backgroundColor: '#f0f2f5', borderRadius: 10, padding: 12, fontSize: 15, color: '#1c1c1c' },
-  switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 },
-  saveBtn: { backgroundColor: PRIMARY, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 30 },
-  saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  catPicker: { flexDirection: 'row', marginBottom: 10 },
-  catPill: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: '#f0f2f5', marginRight: 10, borderWidth: 1, borderColor: '#eee' },
-  catPillActive: { backgroundColor: '#fce8ea', borderColor: PRIMARY },
-  catPillTxt: { fontSize: 13, color: '#666', fontWeight: '600' },
-  catPillTxtActive: { color: PRIMARY, fontWeight: '700' },
+  label: { fontSize: 13, fontWeight: '800', color: '#1a1a1a', marginBottom: 10, marginTop: 15, textTransform: 'uppercase', letterSpacing: 0.5 },
+  input: { backgroundColor: '#f5f7fa', borderRadius: 16, padding: 16, fontSize: 16, color: '#1a1a1a', borderWidth: 1, borderColor: '#edf2f7' },
+  switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 15, backgroundColor: '#f8fafc', padding: 14, borderRadius: 16 },
+  saveBtn: { backgroundColor: PRIMARY, borderRadius: 18, paddingVertical: 18, alignItems: 'center', marginTop: 35, shadowColor: PRIMARY, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 },
+  saveBtnText: { color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: 0.5 },
+  catPicker: { flexDirection: 'row', marginBottom: 5 },
+  catPill: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 14, backgroundColor: '#fff', marginRight: 10, borderWidth: 1, borderColor: '#edf2f7' },
+  catPillActive: { backgroundColor: PRIMARY, borderColor: PRIMARY },
+  catPillTxt: { fontSize: 14, color: '#4a5568', fontWeight: '700' },
+  catPillTxtActive: { color: '#fff', fontWeight: '800' },
+
+  imagePickerContainer: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#edf2f7',
+    borderStyle: 'dashed',
+    height: 140,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+    position: 'relative'
+  },
+  imageOptionsRow: { flexDirection: 'row', justifyContent: 'center', width: '100%' },
+  imageOption: { alignItems: 'center', paddingHorizontal: 25 },
+  imageIconWrap: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', marginBottom: 8, elevation: 1 },
+  imageOptionTxt: { fontSize: 13, fontWeight: '700', color: '#718096' },
+  
+  previewWrap: { width: '100%', height: '100%', position: 'relative' },
+  formImagePreview: { width: '100%', height: '100%', resizeMode: 'cover' },
+  removeImgBtn: { position: 'absolute', top: 10, right: 10, backgroundColor: '#fff', borderRadius: 12 },
+  
+  uploadOverlay: { position: 'absolute', top:0, left:0, right:0, bottom:0, backgroundColor: 'rgba(255,255,255,0.85)', justifyContent: 'center', alignItems:'center' },
+  uploadTxt: { fontSize: 12, fontWeight: '700', color: PRIMARY, marginTop: 4 },
+
+  subtitle: { fontSize: 13, color: '#a0aec0', fontWeight: '600', marginTop: 2 },
 
   confirmOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 20 },
   confirmBox: { backgroundColor: '#fff', borderRadius: 24, padding: 24, width: '100%', alignItems: 'center', maxWidth: 400 },

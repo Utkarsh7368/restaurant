@@ -101,7 +101,6 @@ export default function AdminOrdersScreen() {
 
   const handleMarkAsPaid = async (orderId) => {
     const prevOrders = [...orders];
-    // Optimistic Update
     setOrders(prev => prev.map(o => o._id === orderId ? { ...o, isPaid: true } : o));
 
     try {
@@ -109,94 +108,115 @@ export default function AdminOrdersScreen() {
         headers: { Authorization: `Bearer ${token}` }
       });
     } catch (e) {
-      setOrders(prevOrders); // Rollback
+      setOrders(prevOrders);
       Alert.alert('Error', 'Failed to update payment status');
+    }
+  };
+
+  const getStatusInfo = (status) => {
+    switch (status) {
+      case 'pending': return { label: 'New Order', color: '#f59e0b', bg: '#fef3c7' };
+      case 'preparing': return { label: 'Preparing', color: '#3b82f6', bg: '#dbeafe' };
+      case 'delivered': return { label: 'Completed', color: '#10b981', bg: '#d1fae5' };
+      case 'cancelled': return { label: 'Cancelled', color: '#ef4444', bg: '#fee2e2' };
+      default: return { label: status.toUpperCase(), color: '#6b7280', bg: '#f3f4f6' };
     }
   };
 
   const renderItem = ({ item }) => {
     const itemsString = item.items.map(i => `${i.quantity}x ${i.name}`).join(', ');
     const customer = item.user || {};
+    const statusInfo = getStatusInfo(item.status);
 
     return (
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <Text style={styles.orderId}>#{item._id.slice(-6).toUpperCase()}</Text>
-          <View style={{flexDirection: 'row'}}>
-            <View style={[styles.badge, { backgroundColor: getStatusColor(item.status), marginRight: 6 }]}>
-              <Text style={styles.badgeText}>{item.status.toUpperCase()}</Text>
-            </View>
-            <View style={[styles.badge, { backgroundColor: item.isPaid ? '#2ecc71' : '#e74c3c' }]}>
-              <Text style={styles.badgeText}>{item.isPaid ? 'PAID' : 'UNPAID'}</Text>
-            </View>
+          <View>
+            <Text style={styles.orderId}>Order #{item._id.slice(-6).toUpperCase()}</Text>
+            <Text style={styles.orderDate}>{new Date(item.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+          </View>
+          <View style={[styles.statusBadge, { backgroundColor: statusInfo.bg }]}>
+            <View style={[styles.statusDot, { backgroundColor: statusInfo.color }]} />
+            <Text style={[styles.statusText, { color: statusInfo.color }]}>{statusInfo.label}</Text>
           </View>
         </View>
 
-        <Text style={styles.items}>{itemsString}</Text>
-        <View style={[styles.customerRow, {marginTop: 8}]}>
-          <Ionicons name="card-outline" size={16} color="#666" />
-          <Text style={[styles.customerText, {fontWeight: '700'}]}>Payment: {item.paymentMethod || 'COD'}</Text>
+        <View style={styles.itemsBox}>
+          <Text style={styles.items}>{itemsString}</Text>
+          <View style={styles.priceRow}>
+            <Text style={styles.priceLabel}>Grand Total</Text>
+            <Text style={styles.totalValue}>₹{item.totalAmount}</Text>
+          </View>
         </View>
 
-        <View style={styles.divider} />
-        
-        <View style={styles.customerRow}>
-          <Ionicons name="person-circle-outline" size={18} color="#666" />
-          <Text style={styles.customerText}>{customer.name || 'Unknown'}</Text>
-        </View>
-        <View style={styles.customerRow}>
-          <Ionicons name="call-outline" size={18} color="#666" />
-          <Text style={styles.customerText}>{customer.phone || 'No phone'}</Text>
-        </View>
-        <View style={styles.customerRow}>
-          <Ionicons name="location-outline" size={18} color="#666" />
-          <Text style={styles.customerText}>{customer.address || 'No Picked Address'}</Text>
+        <View style={styles.sectionHeader}>
+          <Ionicons name="person-outline" size={14} color="#a0aec0" />
+          <Text style={styles.sectionTitle}>Customer Details</Text>
         </View>
         
-        <View style={styles.divider} />
-
-        <View style={styles.agentSection}>
+        <View style={styles.customerContent}>
+          <Text style={styles.custName}>{customer.name || 'Walk-in Customer'}</Text>
+          <View style={styles.custDetailRow}>
+            <Ionicons name="call-outline" size={14} color="#718096" />
+            <Text style={styles.custDetailText}>{customer.phone || 'Contact not provided'}</Text>
+          </View>
+          <View style={styles.custDetailRow}>
+            <Ionicons name="location-outline" size={14} color="#718096" />
+            <Text style={styles.custDetailText} numberOfLines={2}>{customer.address || 'Dining In'}</Text>
+          </View>
+        </View>
+        
+        <View style={styles.sectionHeader}>
+          <Ionicons name="bicycle-outline" size={14} color="#a0aec0" />
           <Text style={styles.sectionTitle}>Delivery Agent</Text>
+        </View>
+
+        <View style={styles.agentBox}>
           {item.deliveryAgentId ? (
             <View style={styles.assignedAgent}>
-              <Ionicons name="bicycle" size={20} color={PRIMARY} />
-              <Text style={styles.agentName}>{item.deliveryAgentId.name}</Text>
+              <View style={styles.agentAvatar}>
+                <Ionicons name="person" size={16} color={PRIMARY} />
+              </View>
+              <View style={{flex: 1}}>
+                <Text style={styles.agentName}>{item.deliveryAgentId.name}</Text>
+                <Text style={styles.agentRole}>On route</Text>
+              </View>
+              <Ionicons name="checkmark-circle" size={20} color="#10b981" />
             </View>
           ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.agentList}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.agentScroll}>
               {agents.length > 0 ? agents.map(agent => (
-                <TouchableOpacity key={agent._id} style={styles.agentPill} onPress={() => assignAgent(item._id, agent._id)}>
-                  <Text style={styles.agentPillText}>{agent.name}</Text>
+                <TouchableOpacity key={agent._id} style={styles.agentChip} onPress={() => assignAgent(item._id, agent._id)} activeOpacity={0.7}>
+                  <Text style={styles.agentChipText}>{agent.name}</Text>
                 </TouchableOpacity>
-              )) : <Text style={styles.noAgents}>No agents available</Text>}
+              )) : <Text style={styles.noAgents}>Wait for agents to go online...</Text>}
             </ScrollView>
           )}
         </View>
 
-        <View style={styles.divider} />
-
-        <View style={styles.cardFooter}>
-          <Text style={styles.totalValue}>₹{item.totalAmount}</Text>
-          <View style={{flexDirection: 'row'}}>
-            {!item.isPaid && (
-              <TouchableOpacity 
-                style={[styles.actionBtn, {backgroundColor: '#2ecc71', marginRight: 8}]}
-                onPress={() => handleMarkAsPaid(item._id)}
-              >
-                <Text style={styles.actionBtnText}>Paid</Text>
-              </TouchableOpacity>
-            )}
-            {item.status !== 'delivered' && item.status !== 'cancelled' && (
-              <TouchableOpacity 
-                style={styles.actionBtn}
-                onPress={() => cycleStatus(item.status, item._id)}
-              >
-                <Text style={styles.actionBtnText}>
-                  {item.status === 'pending' ? 'Preparing' : 'Delivered'}
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
+        <View style={styles.cardActions}>
+          {!item.isPaid && (
+            <TouchableOpacity 
+              style={styles.paidBtn}
+              onPress={() => handleMarkAsPaid(item._id)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="cash-outline" size={18} color="#10b981" />
+              <Text style={styles.paidBtnText}>Mark Paid</Text>
+            </TouchableOpacity>
+          )}
+          {item.status !== 'delivered' && item.status !== 'cancelled' && (
+            <TouchableOpacity 
+              style={styles.nextBtn}
+              onPress={() => cycleStatus(item.status, item._id)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.nextBtnText}>
+                {item.status === 'pending' ? 'Start Preparing' : 'Mark Delivered'}
+              </Text>
+              <Ionicons name="arrow-forward" size={18} color="#fff" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     );
@@ -207,7 +227,13 @@ export default function AdminOrdersScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>All Kitchen Orders</Text>
+        <View>
+          <Text style={styles.title}>Kitchen Orders</Text>
+          <Text style={styles.subtitle}>Track and manage live orders</Text>
+        </View>
+        <TouchableOpacity style={styles.refreshBtn} onPress={onRefresh} activeOpacity={0.7}>
+          <Ionicons name="refresh" size={22} color={PRIMARY} />
+        </TouchableOpacity>
       </View>
       <FlatList
         data={orders}
@@ -227,40 +253,73 @@ export default function AdminOrdersScreen() {
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  container: { flex: 1, backgroundColor: '#f0f2f5' },
-  header: { padding: 20, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#eee' },
-  title: { fontSize: 24, fontWeight: '800', color: '#1c1c1c' },
-  list: { padding: 16 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: '#fcfcfc' },
+  header: { 
+    paddingHorizontal: 20, 
+    paddingTop: 15, 
+    paddingBottom: 20, 
+    backgroundColor: '#fff', 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0'
+  },
+  title: { fontSize: 26, fontWeight: '900', color: '#1a1a1a', letterSpacing: -0.5 },
+  subtitle: { fontSize: 13, color: '#a0aec0', fontWeight: '600', marginTop: 2 },
+  refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#fdf2f2', alignItems: 'center', justifyContent: 'center' },
+  
+  list: { padding: 20 },
   
   card: {
-    backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 16,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3
+    backgroundColor: '#fff', 
+    borderRadius: 24, 
+    padding: 20, 
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 10, elevation: 2
   },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  orderId: { fontSize: 16, fontWeight: '800', color: '#1c1c1c' },
-  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  badgeText: { fontSize: 10, fontWeight: '800', color: '#fff', letterSpacing: 0.5 },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
+  orderId: { fontSize: 18, fontWeight: '900', color: '#1a1a1a', letterSpacing: -0.5 },
+  orderDate: { fontSize: 12, color: '#a0aec0', fontWeight: '600', marginTop: 2 },
   
-  items: { fontSize: 15, color: '#444', fontWeight: '500' },
-  divider: { height: 1, backgroundColor: '#f0f0f0', marginVertical: 12 },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 },
+  statusDot: { width: 6, height: 6, borderRadius: 3, marginRight: 6 },
+  statusText: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
   
-  customerRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 },
-  customerText: { marginLeft: 8, fontSize: 13, color: '#555', flexShrink: 1 },
+  itemsBox: { backgroundColor: '#f8fafc', borderRadius: 16, padding: 15, marginBottom: 15 },
+  items: { fontSize: 15, color: '#4a5568', fontWeight: '600', lineHeight: 22 },
+  priceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, borderTopWidth: 1, borderTopColor: '#edf2f7', paddingTop: 10 },
+  priceLabel: { fontSize: 12, color: '#a0aec0', fontWeight: '700', textTransform: 'uppercase' },
+  totalValue: { fontSize: 20, color: PRIMARY, fontWeight: '900' },
   
-  cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  totalValue: { fontSize: 18, color: PRIMARY, fontWeight: '800' },
-  actionBtn: { backgroundColor: '#1c1c1c', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
-  actionBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, marginTop: 5 },
+  sectionTitle: { fontSize: 12, fontWeight: '800', color: '#718096', marginLeft: 6, textTransform: 'uppercase', letterSpacing: 1 },
+  
+  customerContent: { marginBottom: 15, paddingLeft: 4 },
+  custName: { fontSize: 16, fontWeight: '800', color: '#2d3748', marginBottom: 6 },
+  custDetailRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+  custDetailText: { fontSize: 13, color: '#718096', marginLeft: 8, fontWeight: '500' },
+  
+  agentBox: { marginBottom: 20 },
+  assignedAgent: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f0f9ff', padding: 12, borderRadius: 16, borderWidth: 1, borderColor: '#e0f2fe' },
+  agentAvatar: { width: 32, height: 32, borderRadius: 10, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginRight: 12, elevation: 1 },
+  agentName: { fontSize: 15, fontWeight: '800', color: '#0369a1' },
+  agentRole: { fontSize: 11, color: '#0ea5e9', fontWeight: '600', marginTop: 1 },
+  
+  agentScroll: { flexDirection: 'row' },
+  agentChip: { backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 14, marginRight: 10, borderWidth: 1, borderColor: '#edf2f7', shadowColor: '#000', shadowOpacity: 0.02, elevation: 1 },
+  agentChipText: { fontSize: 13, fontWeight: '700', color: '#4a5568' },
+  noAgents: { fontSize: 13, color: '#a0aec0', fontStyle: 'italic', paddingVertical: 10 },
+
+  cardActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#f0f0f0', paddingTop: 15 },
+  paidBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, backgroundColor: '#ecfdf5' },
+  paidBtnText: { marginLeft: 6, fontSize: 13, fontWeight: '800', color: '#10b981' },
+  nextBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: PRIMARY, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 14, shadowColor: PRIMARY, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
+  nextBtnText: { color: '#fff', fontSize: 14, fontWeight: '800', marginRight: 8 },
+
   emptyWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 100 },
-  emptyText: { marginTop: 10, fontSize: 16, color: '#999', fontWeight: '600' },
-  
-  agentSection: { marginTop: 4 },
-  sectionTitle: { fontSize: 12, fontWeight: '700', color: '#999', marginBottom: 8, textTransform: 'uppercase' },
-  assignedAgent: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f0f8ff', padding: 10, borderRadius: 8 },
-  agentName: { marginLeft: 8, fontSize: 14, fontWeight: '700', color: '#2c3e50' },
-  agentList: { flexDirection: 'row' },
-  agentPill: { backgroundColor: '#f0f2f5', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, marginRight: 8, borderWidth: 1, borderColor: '#eee' },
-  agentPillText: { fontSize: 12, fontWeight: '600', color: '#555' },
-  noAgents: { fontSize: 12, color: '#bbb', fontStyle: 'italic' }
+  emptyText: { marginTop: 15, fontSize: 18, color: '#a0aec0', fontWeight: '800' },
 });

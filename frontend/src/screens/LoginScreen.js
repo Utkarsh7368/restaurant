@@ -5,8 +5,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { useAuth } from '../context/AuthContext';
+
+const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
 const PRIMARY = '#e23744';
 
@@ -22,9 +24,16 @@ export default function LoginScreen({ navigation }) {
     Animated.timing(fade, { toValue: 1, duration: 400, useNativeDriver: true }).start();
     
     // Initialize Google Sign-in
-    GoogleSignin.configure({
-      webClientId: '345450378654-ivc1j9dc1okifs50jb9muki6g5pf8rou.apps.googleusercontent.com',
-    });
+    if (!isExpoGo) {
+      try {
+        const { GoogleSignin } = require('@react-native-google-signin/google-signin');
+        GoogleSignin.configure({
+          webClientId: '345450378654-ivc1j9dc1okifs50jb9muki6g5pf8rou.apps.googleusercontent.com',
+        });
+      } catch (e) {
+        console.warn('Google Sign-In initialization failed.');
+      }
+    }
   }, []);
 
   const { login, googleLogin } = useAuth();
@@ -51,13 +60,28 @@ export default function LoginScreen({ navigation }) {
   };
 
   const handleGoogleLogin = async () => {
+    if (isExpoGo) {
+      Alert.alert(
+        "Google Sign-In Unavailable",
+        "This feature only works in your actual APK, not in Expo Go. Please use your EAS Build to test this!"
+      );
+      return;
+    }
+
     try {
       setBusy(true);
+      const { GoogleSignin } = require('@react-native-google-signin/google-signin');
       await GoogleSignin.hasPlayServices();
       const userInfo = await GoogleSignin.signIn();
-      await googleLogin(userInfo.data.idToken);
+      if (userInfo.data.idToken) {
+        await googleLogin(userInfo.data.idToken);
+      }
     } catch (e) {
-      setError('Google Sign-In was cancelled or failed');
+      console.log('Google Error:', e);
+      Alert.alert(
+        "Google Sign-In Unavailable",
+        "This feature only works in the actual installed app (APK), not in Expo Go. Please use your EAS Build to test this!"
+      );
     } finally {
       setBusy(false);
     }

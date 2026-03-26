@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { View, Text, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, Platform, ActivityIndicator, Animated } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -59,13 +59,30 @@ function TabIcon({ name, focused }) {
 
 function CartIcon({ focused }) {
   const { cartCount } = useCart();
+  const scaleAnim = React.useRef(new Animated.Value(1)).current;
+
+  React.useEffect(() => {
+    if (cartCount > 0) {
+      Animated.sequence([
+        Animated.timing(scaleAnim, { toValue: 1.3, duration: 60, useNativeDriver: true }),
+        Animated.timing(scaleAnim, { toValue: 1, duration: 60, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [cartCount]);
+
   return (
     <View>
       <Ionicons name={focused ? 'bag' : 'bag-outline'} size={22} color={focused ? PRIMARY : '#bbb'} />
       {cartCount > 0 && (
-        <View style={{ position:'absolute', top:-4, right:-8, backgroundColor:PRIMARY, borderRadius:8, minWidth:16, height:16, alignItems:'center', justifyContent:'center', paddingHorizontal:3 }}>
+        <Animated.View style={{ 
+          position:'absolute', top:-4, right:-8, 
+          backgroundColor:PRIMARY, borderRadius:8, 
+          minWidth:16, height:16, alignItems:'center', 
+          justifyContent:'center', paddingHorizontal:3,
+          transform: [{ scale: scaleAnim }]
+        }}>
           <Text style={{ color:'#fff', fontSize:9, fontWeight:'800' }}>{cartCount}</Text>
-        </View>
+        </Animated.View>
       )}
     </View>
   );
