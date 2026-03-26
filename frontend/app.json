@@ -16,10 +16,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#E23744",
+        "foregroundImage": "./assets/android-icon-foreground.png"
       },
       "package": "com.utkarshandroid2001.app2"
     },
@@ -30,6 +28,14 @@
       "eas": {
         "projectId": "a2473260-6058-412e-a40d-c45e4999ea88"
       }
-    }
+    },
+    "plugins": [
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.REPLACE_WITH_IOS_CLIENT_ID"
+        }
+      ]
+    ]
   }
 }

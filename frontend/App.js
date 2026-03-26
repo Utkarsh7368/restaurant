@@ -102,7 +102,6 @@ function MainAppStack() {
 
   return (
     <Stack.Navigator 
-      key={user?.id + initialRoute} 
       screenOptions={{ headerShown: false }} 
       initialRouteName={initialRoute}
     >

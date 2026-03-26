@@ -61,6 +61,16 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Google Login
+  const googleLogin = async (idToken) => {
+    try {
+      const res = await axios.post(`${API_URL}/auth/google-login`, { idToken });
+      await saveAuthInfo(res.data.token, res.data.user);
+    } catch (err) {
+      throw new Error(err.response?.data?.msg || 'Google Sign-In failed');
+    }
+  };
+
   // Update profile
   const updateProfile = async (profileData) => {
     try {
@@ -86,7 +96,7 @@ export const AuthProvider = ({ children }) => {
   const skipOnboarding = () => setHasSkipped(true);
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, logout, login, register, updateProfile, hasSkipped, skipOnboarding }}>
+    <AuthContext.Provider value={{ user, token, loading, logout, login, register, googleLogin, updateProfile, hasSkipped, skipOnboarding }}>
       {children}
     </AuthContext.Provider>
   );

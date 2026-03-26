@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Platform, TextInput, FlatList } from 'react-native';
-import MapView from 'react-native-maps';
+import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,14 +9,60 @@ import { useNavigation } from '@react-navigation/native';
 
 const PRIMARY = '#e23744';
 
+// Leaflet HTML Template
+const MAP_HTML = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body { margin: 0; padding: 0; background: #f0f0f0; }
+        #map { height: 100vh; width: 100vw; }
+        .leaflet-control-attribution { display: none !important; }
+        .leaflet-bar { border: none !important; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        var map = L.map('map', { 
+            zoomControl: false, 
+            attributionControl: false 
+        }).setView([28.6139, 77.2090], 16);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19
+        }).addTo(map);
+
+        // Notify React Native on move
+        map.on('move', function() {
+            var center = map.getCenter();
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'onRegionChange',
+                latitude: center.lat,
+                longitude: center.lng
+            }));
+        });
+
+        // Interface for React Native to move the map
+        window.setCenter = function(lat, lng) {
+            map.setView([lat, lng], 16, { animate: true });
+        };
+    </script>
+</body>
+</html>
+`;
+
 export default function MapScreen() {
   const { skipOnboarding } = useAuth();
   const navigation = useNavigation();
+  const webViewRef = React.useRef(null);
+  
   const [region, setRegion] = useState({
     latitude: 28.6139,
     longitude: 77.2090, 
-    latitudeDelta: 0.005,
-    longitudeDelta: 0.005,
   });
   
   const [loading, setLoading] = useState(false);
@@ -47,13 +93,15 @@ export default function MapScreen() {
   }, [searchQuery]);
 
   const handleSelectPlace = (place) => {
-    setSearchQuery(place.display_name.split(',')[0]); // Only show the tightest area name locally
+    const lat = parseFloat(place.lat);
+    const lng = parseFloat(place.lon);
+    
+    setSearchQuery(place.display_name.split(',')[0]); 
     setShowSuggestions(false);
-    setRegion(prev => ({
-      ...prev,
-      latitude: parseFloat(place.lat),
-      longitude: parseFloat(place.lon)
-    }));
+    setRegion({ latitude: lat, longitude: lng });
+
+    // Tell the Web Map to move
+    webViewRef.current?.injectJavaScript(`window.setCenter(${lat}, ${lng}); true;`);
   };
 
   // Request permissions and zoom to current location instantly
@@ -63,16 +111,26 @@ export default function MapScreen() {
       if (status === 'granted') {
         try {
           let loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-          setRegion(prev => ({ 
-            ...prev, 
-            latitude: loc.coords.latitude, 
-            longitude: loc.coords.longitude 
-          }));
+          const lat = loc.coords.latitude;
+          const lng = loc.coords.longitude;
+          
+          setRegion({ latitude: lat, longitude: lng });
+          // Sync with Web Map
+          webViewRef.current?.injectJavaScript(`window.setCenter(${lat}, ${lng}); true;`);
         } catch(e) {}
       }
       setLocating(false);
     })();
   }, []);
+
+  const onMessage = (event) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      if (data.type === 'onRegionChange') {
+        setRegion({ latitude: data.latitude, longitude: data.longitude });
+      }
+    } catch (e) {}
+  };
 
   const handleConfirm = async () => {
     setLoading(true);
@@ -116,11 +174,15 @@ export default function MapScreen() {
 
   return (
     <View style={styles.container}>
-      <MapView 
+      <WebView
+        ref={webViewRef}
+        originWhitelist={['*']}
+        source={{ html: MAP_HTML }}
         style={styles.map}
-        region={region}
-        onRegionChangeComplete={(newRegion) => setRegion(newRegion)}
-        showsUserLocation={true}
+        onMessage={onMessage}
+        scrollEnabled={true}
+        domStorageEnabled={true}
+        javaScriptEnabled={true}
       />
       
       {/* Floating Center Pin */}
@@ -137,7 +199,7 @@ export default function MapScreen() {
         <SafeAreaView edges={['top']}>
           <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12}}>
             <Text style={styles.topTitle}>Delivery Location</Text>
-            <TouchableOpacity onPress={skipOnboarding}>
+            <TouchableOpacity onPress={() => { skipOnboarding(); navigation.navigate('MainTabs'); }}>
               <Text style={{color: PRIMARY, fontWeight: '700', fontSize: 13}}>Skip for now</Text>
             </TouchableOpacity>
           </View>

@@ -4,21 +4,29 @@ import {
   StatusBar, KeyboardAvoidingView, Platform, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { useAuth } from '../context/AuthContext';
 
 const PRIMARY = '#e23744';
 
 export default function RegisterScreen({ navigation }) {
-  const { register } = useAuth();
+  const { register, googleLogin } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const fade = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(fade, { toValue: 1, duration: 400, useNativeDriver: true }).start();
+
+    // Initialize Google Sign-in
+    GoogleSignin.configure({
+      webClientId: 'REPLACE_WITH_YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
+    });
   }, []);
 
   const validate = () => {
@@ -41,6 +49,19 @@ export default function RegisterScreen({ navigation }) {
       setError(e.message);
     }
     setBusy(false);
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      setBusy(true);
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      await googleLogin(userInfo.data.idToken);
+    } catch (e) {
+      setError('Google Sign-In was cancelled or failed');
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -83,14 +104,26 @@ export default function RegisterScreen({ navigation }) {
 
             <View style={styles.inputWrap}>
               <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Min 6 characters"
-                placeholderTextColor="#ccc"
-                value={password}
-                onChangeText={t => { setPassword(t); setError(''); }}
-                secureTextEntry
-              />
+              <View style={styles.passInputWrap}>
+                <TextInput
+                  style={styles.inputFlex}
+                  placeholder="Min 6 characters"
+                  placeholderTextColor="#ccc"
+                  value={password}
+                  onChangeText={t => { setPassword(t); setError(''); }}
+                  secureTextEntry={!showPassword}
+                />
+                <TouchableOpacity 
+                  style={styles.eyeBtn} 
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  <Ionicons 
+                    name={showPassword ? "eye-off-outline" : "eye-outline"} 
+                    size={20} 
+                    color="#999" 
+                  />
+                </TouchableOpacity>
+              </View>
             </View>
 
             {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -102,6 +135,22 @@ export default function RegisterScreen({ navigation }) {
               disabled={busy}
             >
               <Text style={styles.btnTxt}>{busy ? 'Creating account...' : 'Register'}</Text>
+            </TouchableOpacity>
+
+            <View style={styles.dividerWrap}>
+              <View style={styles.line} />
+              <Text style={styles.dividerTxt}>OR</Text>
+              <View style={styles.line} />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.googleBtn, busy && styles.btnDisabled]}
+              onPress={handleGoogleLogin}
+              activeOpacity={0.85}
+              disabled={busy}
+            >
+              <Ionicons name="logo-google" size={18} color="#444" style={{marginRight: 10}} />
+              <Text style={styles.googleBtnTxt}>Continue with Google</Text>
             </TouchableOpacity>
           </View>
 
@@ -120,7 +169,7 @@ export default function RegisterScreen({ navigation }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#fff' },
   flex: { flex: 1 },
-  container: { flex: 1, justifyContent: 'center', paddingHorizontal: 24 },
+  container: { flex: 1, justifyContent: 'center', paddingHorizontal: 24, paddingBottom: 60 },
 
   header: { alignItems: 'center', marginBottom: 32 },
   logo: { width: 60, height: 60, borderRadius: 30, backgroundColor: PRIMARY, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
@@ -135,6 +184,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#f7f7f7', borderRadius: 12, paddingHorizontal: 16,
     height: 48, fontSize: 15, color: '#1c1c1c',
   },
+  inputFlex: {
+    flex: 1, paddingHorizontal: 16, height: '100%', fontSize: 15, color: '#1c1c1c',
+  },
+  passInputWrap: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#f7f7f7', borderRadius: 12, height: 48,
+  },
+  eyeBtn: { paddingRight: 16, height: '100%', justifyContent: 'center' },
 
   error: { color: PRIMARY, fontSize: 13, marginBottom: 12, textAlign: 'center' },
 
@@ -144,6 +200,16 @@ const styles = StyleSheet.create({
   },
   btnDisabled: { opacity: 0.6 },
   btnTxt: { color: '#fff', fontSize: 15, fontWeight: '700' },
+
+  dividerWrap: { flexDirection: 'row', alignItems: 'center', marginVertical: 20 },
+  line: { flex: 1, height: 1, backgroundColor: '#eee' },
+  dividerTxt: { marginHorizontal: 12, fontSize: 12, color: '#999', fontWeight: '600' },
+
+  googleBtn: {
+    flexDirection: 'row', backgroundColor: '#fff', borderRadius: 12, height: 48,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#eee',
+  },
+  googleBtnTxt: { color: '#444', fontSize: 15, fontWeight: '700' },
 
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
   footerTxt: { fontSize: 14, color: '#6b6b6b' },
