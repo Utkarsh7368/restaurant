@@ -15,6 +15,7 @@ export default function CompleteProfileScreen({ route, navigation }) {
   const mapAddress = route.params?.address || '';
   const lat = route.params?.lat || null;
   const lng = route.params?.lng || null;
+  const isSecondary = route.params?.isSecondary || false;
   
   const [phone, setPhone] = useState(user?.phone || '');
   const [altPhone, setAltPhone] = useState('');
@@ -53,28 +54,19 @@ export default function CompleteProfileScreen({ route, navigation }) {
     setBusy(true);
     
     try {
-      if (user?.phone) {
-        // User already has a profile, just adding another address
-        await addAddress({ 
-          label,
-          address, 
-          houseNo, 
-          landmark, 
-          lat, 
-          lng 
-        });
-      } else {
-        // Initial profile completion
-        await updateProfile({ 
-          phone, 
-          alternatePhone: altPhone, 
-          address: `${houseNo}, ${address}, Landmark: ${landmark}`, 
-          lat, 
-          lng, 
-          landmark, 
-          houseNo 
-        });
-      }
+      // Build profile data payload
+      const payload = {
+        phone,
+        alternatePhone: altPhone,
+        address,
+        landmark,
+        lat,
+        lng,
+        houseNo,
+        isSecondary // Backend uses this to determine which fields to fill
+      };
+
+      await updateProfile(payload);
       navigation.navigate('MainTabs');
     } catch (e) {
       setError(e.message);
@@ -107,19 +99,13 @@ export default function CompleteProfileScreen({ route, navigation }) {
               <TextInput style={[styles.input, styles.readOnly]} value={user?.name || ''} editable={false} />
             </View>
 
-            {/* Address Label Selector */}
+            {/* Address Label Display */}
             <View style={styles.inputWrap}>
-              <Text style={styles.label}>Save Address As</Text>
-              <View style={styles.labelRow}>
-                {['Home', 'Work', 'Other'].map(l => (
-                  <TouchableOpacity 
-                    key={l}
-                    style={[styles.labelPill, label === l && styles.labelPillActive]}
-                    onPress={() => setLabel(l)}
-                  >
-                    <Text style={[styles.labelPillTxt, label === l && styles.labelPillTxtActive]}>{l}</Text>
-                  </TouchableOpacity>
-                ))}
+              <Text style={styles.label}>Saving As</Text>
+              <View style={[styles.labelPill, styles.labelPillActive]}>
+                <Text style={styles.labelPillTxtActive}>
+                  {isSecondary ? 'Secondary Address' : 'Home (Primary)'}
+                </Text>
               </View>
             </View>
 

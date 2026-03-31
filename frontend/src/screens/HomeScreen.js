@@ -34,7 +34,7 @@ const PopularChip = React.memo(({ item }) => {
 // ─── Main HomeScreen ───────────────────────────────────────────
 export default function HomeScreen() {
   const { selectedBranch, locationStatus, BRANCHES } = useBranch();
-  const { user, activeAddress, setActiveAddress } = useAuth();
+  const { user, activeAddress, activeAddressType, setActiveAddressType } = useAuth();
   const navigation = useNavigation();
   const [MENU_ITEMS, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -110,7 +110,7 @@ export default function HomeScreen() {
               activeOpacity={0.7}
             >
               <Text style={styles.location} numberOfLines={1}>
-                📍 {activeAddress ? `${activeAddress.label} • ${BRANCHES.find(b => b.id === selectedBranch)?.city || 'Checking...'}` : 'Set Location'}
+                📍 {activeAddressType === 'primary' ? 'Home' : 'Secondary'} • {BRANCHES.find(b => b.id === selectedBranch)?.city || 'Set Location'}
               </Text>
               <Ionicons name="chevron-down" size={12} color="#a0aec0" style={{marginLeft: 4}} />
             </TouchableOpacity>
@@ -252,45 +252,59 @@ export default function HomeScreen() {
         >
           <Animated.View style={styles.modalSheet}>
             <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>Delivery Address Book</Text>
+            <Text style={styles.modalTitle}>Delivery Location</Text>
             
             <ScrollView style={{maxHeight: 400}}>
-              {user?.addresses?.map((addr) => {
-                const isActive = activeAddress?._id === addr._id;
-                return (
-                  <TouchableOpacity 
-                    key={addr._id}
-                    style={[styles.currentLocBox, isActive && styles.activeLocBox]}
-                    onPress={() => {
-                      setActiveAddress(addr);
-                      setShowLocationModal(false);
-                    }}
-                  >
-                    <View style={[styles.locIconCirc, isActive && {backgroundColor: PRIMARY}]}>
-                      <Ionicons name="location" size={20} color={isActive ? "#fff" : PRIMARY} />
-                    </View>
-                    <View style={{flex: 1}}>
-                      <Text style={styles.locLabel}>{addr.label}</Text>
-                      <Text style={styles.locValue} numberOfLines={2}>{addr.address}</Text>
-                    </View>
-                    {isActive && <Ionicons name="checkmark-circle" size={24} color={PRIMARY} />}
-                  </TouchableOpacity>
-                );
-              })}
-
+              {/* Primary Address */}
               <TouchableOpacity 
-                style={styles.addNewBtn}
+                style={[styles.currentLocBox, activeAddressType === 'primary' && styles.activeLocBox]}
                 onPress={() => {
+                  setActiveAddressType('primary');
                   setShowLocationModal(false);
-                  navigation.navigate('MapScreen');
                 }}
               >
-                <Ionicons name="add-circle-outline" size={24} color={PRIMARY} />
-                <View style={{marginLeft: 12}}>
-                  <Text style={styles.addNewTxt}>Add New Address</Text>
-                  <Text style={{color: '#a0aec0', fontSize: 11}}>Search on map to save</Text>
+                <View style={[styles.locIconCirc, activeAddressType === 'primary' && {backgroundColor: PRIMARY}]}>
+                  <Ionicons name="location" size={20} color={activeAddressType === 'primary' ? "#fff" : PRIMARY} />
                 </View>
+                <View style={{flex: 1}}>
+                  <Text style={styles.locLabel}>Home (Primary)</Text>
+                  <Text style={styles.locValue} numberOfLines={2}>{user?.address || 'Set your primary address'}</Text>
+                </View>
+                {activeAddressType === 'primary' && <Ionicons name="checkmark-circle" size={24} color={PRIMARY} />}
               </TouchableOpacity>
+
+              {/* Secondary Address (If it exists) */}
+              {user?.secondaryAddress ? (
+                <TouchableOpacity 
+                  style={[styles.currentLocBox, activeAddressType === 'secondary' && styles.activeLocBox]}
+                  onPress={() => {
+                    setActiveAddressType('secondary');
+                    setShowLocationModal(false);
+                  }}
+                >
+                  <View style={[styles.locIconCirc, activeAddressType === 'secondary' && {backgroundColor: PRIMARY}]}>
+                    <Ionicons name="location" size={20} color={activeAddressType === 'secondary' ? "#fff" : PRIMARY} />
+                  </View>
+                  <View style={{flex: 1}}>
+                    <Text style={styles.locLabel}>Secondary Address</Text>
+                    <Text style={styles.locValue} numberOfLines={2}>{user?.secondaryAddress}</Text>
+                  </View>
+                  {activeAddressType === 'secondary' && <Ionicons name="checkmark-circle" size={24} color={PRIMARY} />}
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity 
+                  style={styles.addNewBtn}
+                  onPress={() => {
+                    setShowLocationModal(false);
+                    navigation.navigate('MapScreen', { isSecondary: true });
+                  }}
+                >
+                  <Ionicons name="add-circle-outline" size={24} color={PRIMARY} />
+                  <View style={{marginLeft: 12}}>
+                    <Text style={styles.addNewTxt}>Add New Address</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
             </ScrollView>
 
             <TouchableOpacity 

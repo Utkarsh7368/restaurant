@@ -11,14 +11,13 @@ const userSchema = new mongoose.Schema({
   landmark: { type: String, default: '' },
   lat: { type: Number, default: 0 },
   lng: { type: Number, default: 0 },
-  addresses: [{
-    label: { type: String, default: 'Home' },
-    address: { type: String, required: true },
-    houseNo: { type: String },
-    landmark: { type: String },
-    lat: { type: Number, required: true },
-    lng: { type: Number, required: true }
-  }],
+  houseNo: { type: String, default: '' },
+  // Secondary Address
+  secondaryAddress: { type: String, default: '' },
+  secondaryLandmark: { type: String, default: '' },
+  secondaryLat: { type: Number, default: 0 },
+  secondaryLng: { type: Number, default: 0 },
+  secondaryHouseNo: { type: String, default: '' },
   role: { type: String, enum: ['user', 'admin', 'agent'], default: 'user' }
 }, { timestamps: true });
 
