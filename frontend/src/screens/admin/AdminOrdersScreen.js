@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 13, color: '#a0aec0', fontWeight: '600', marginTop: 2 },
   refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#fdf2f2', alignItems: 'center', justifyContent: 'center' },
 
-  filterSection: { backgroundColor: '#fff', paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
+  filterSection: { backgroundColor: '#fff', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
   filterRow: { paddingHorizontal: 20 },
   filterPill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, backgroundColor: '#f7fafc', marginRight: 10, borderWidth: 1, borderColor: '#edf2f7' },
   filterPillActive: { backgroundColor: PRIMARY, borderColor: PRIMARY },

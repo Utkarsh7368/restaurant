@@ -78,11 +78,13 @@ export const AuthProvider = ({ children }) => {
     } catch (err) { throw new Error(err.response?.data?.msg || 'Registration failed'); }
   };
 
-  const login = async (email, password) => {
+  const login = async (identifier, password) => {
     try {
-      const res = await axios.post(`${API_URL}/auth/login`, { email, password });
+      const isEmail = /\S+@\S+\.\S+/.test(identifier);
+      const payload = isEmail ? { email: identifier, password } : { agentId: identifier, password };
+      const res = await axios.post(`${API_URL}/auth/login`, payload);
       await saveAuthInfo(res.data.token, res.data.user);
-    } catch (err) { throw new Error(err.response?.data?.msg || 'Invalid email or password'); }
+    } catch (err) { throw new Error(err.response?.data?.msg || 'Invalid credentials'); }
   };
 
   const googleLogin = async (idToken) => {

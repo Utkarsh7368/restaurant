@@ -34,6 +34,7 @@ import SuperAdminRevenueScreen from './src/screens/admin/SuperAdminRevenueScreen
 import SuperAdminMenuScreen from './src/screens/admin/SuperAdminMenuScreen';
 
 import AgentOrdersScreen from './src/screens/agent/AgentOrdersScreen';
+import AgentProfileScreen from './src/screens/agent/AgentProfileScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -213,7 +214,7 @@ function AgentTabs() {
       tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
     }}>
       <Tab.Screen name="AgentOrders" component={AgentOrdersScreen} options={{ tabBarIcon: ({focused}) => <TabIcon name="bicycle" focused={focused} />, tabBarLabel: 'Deliveries' }} />
-      <Tab.Screen name="AgentProfile" component={ProfileScreen} options={{ tabBarIcon: ({focused}) => <TabIcon name="person" focused={focused} />, tabBarLabel: 'Profile' }} />
+      <Tab.Screen name="AgentProfile" component={AgentProfileScreen} options={{ tabBarIcon: ({focused}) => <TabIcon name="person" focused={focused} />, tabBarLabel: 'Profile' }} />
     </Tab.Navigator>
   );
 }

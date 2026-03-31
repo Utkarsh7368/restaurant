@@ -39,10 +39,8 @@ export default function LoginScreen({ navigation }) {
   const { login, googleLogin } = useAuth();
 
   const validate = () => {
-    if (!email.trim()) return 'Please enter your email';
-    if (!/\S+@\S+\.\S+/.test(email.trim())) return 'Please enter a valid email';
-    if (!password) return 'Please enter your password';
-    if (password.length < 6) return 'Password must be at least 6 characters';
+    if (!email.trim()) return 'Please enter your email or Agent ID';
+    if (password.length < 4) return 'Password is too short';
     return null;
   };
 
@@ -103,14 +101,14 @@ export default function LoginScreen({ navigation }) {
           {/* Form */}
           <View style={styles.form}>
             <View style={styles.inputWrap}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>Email or Agent ID</Text>
               <TextInput
                 style={styles.input}
-                placeholder="your@email.com"
+                placeholder="your@email.com or SWAD_AUR_001"
                 placeholderTextColor="#ccc"
                 value={email}
                 onChangeText={t => { setEmail(t); setError(''); }}
-                keyboardType="email-address"
+                keyboardType="default"
                 autoCapitalize="none"
                 autoCorrect={false}
               />
