@@ -8,6 +8,7 @@ import { useAuth, API_URL } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
+import { useBranch } from '../context/BranchContext';
 
 const PRIMARY = '#e23744';
 
@@ -49,6 +50,7 @@ function CartItem({ item }) {
 export default function CartScreen() {
   const { cartItems, cartTotal, clearCart } = useCart();
   const { user } = useAuth();
+  const { selectedBranch } = useBranch();
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
 
@@ -76,7 +78,8 @@ export default function CartScreen() {
       const res = await axios.post(`${API_URL}/orders/create`, {
         items: itemsPayload,
         totalAmount: GRAND,
-        paymentMethod: 'COD'
+        paymentMethod: 'COD',
+        branch: selectedBranch
       });
 
       clearCart();

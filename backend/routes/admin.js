@@ -8,7 +8,13 @@ const Dish = require('../models/Dish');
 // Get all orders across the restaurant
 router.get('/orders', verifyAdmin, async (req, res) => {
   try {
-    const orders = await Order.find()
+    const { branch } = req.query;
+    const filter = {};
+    if (branch && branch !== 'All') {
+      filter.branch = branch;
+    }
+
+    const orders = await Order.find(filter)
          .populate('user', ['name', 'phone', 'address', 'email', 'landmark', 'lat', 'lng'])
          .populate('deliveryAgentId', ['name', 'phone'])
          .sort({ createdAt: -1 });

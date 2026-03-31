@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { CartProvider, useCart } from './src/context/CartContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { BranchProvider } from './src/context/BranchContext';
 
 import SplashScreen from './src/screens/SplashScreen';
 import LoginScreen from './src/screens/LoginScreen';
@@ -230,14 +231,16 @@ export default function App() {
 
   return (
     <AuthProvider>
-      <CartProvider>
-        <NavigationContainer>
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="Splash" component={SplashScreen} />
-            <Stack.Screen name="AuthGate" component={AuthGate} />
-          </Stack.Navigator>
-        </NavigationContainer>
-      </CartProvider>
+      <BranchProvider>
+        <CartProvider>
+          <NavigationContainer>
+            <Stack.Navigator screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="Splash" component={SplashScreen} />
+              <Stack.Screen name="AuthGate" component={AuthGate} />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </CartProvider>
+      </BranchProvider>
     </AuthProvider>
   );
 }

@@ -6,7 +6,7 @@ const Order = require('../models/Order');
 // Create a new order
 router.post('/create', auth, async (req, res) => {
   try {
-    const { items, totalAmount } = req.body;
+    const { items, totalAmount, branch } = req.body;
     
     if (!items || items.length === 0) {
       return res.status(400).json({ msg: 'No order items' });
@@ -15,7 +15,8 @@ router.post('/create', auth, async (req, res) => {
     const order = new Order({
       user: req.user.id,
       items,
-      totalAmount
+      totalAmount,
+      branch: branch || 'Auraiya'
     });
 
     const createdOrder = await order.save();

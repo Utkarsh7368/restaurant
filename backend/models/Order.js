@@ -19,11 +19,17 @@ const orderSchema = new mongoose.Schema({
   paymentMethod: { type: String, default: 'COD' },
   isPaid: { type: Boolean, default: false },
   deliveryAgentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  isDelivered: { type: Boolean, default: false }
+  isDelivered: { type: Boolean, default: false },
+  branch: { 
+    type: String, 
+    enum: ['Auraiya', 'Dibiyapur'], 
+    default: 'Auraiya' 
+  }
 }, { timestamps: true });
 
 orderSchema.index({ user: 1 });
 orderSchema.index({ status: 1 });
+orderSchema.index({ branch: 1 });
 orderSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('Order', orderSchema);

@@ -3,12 +3,15 @@ import { View, Text, StyleSheet, TouchableOpacity, Animated, StatusBar } from 'r
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useBranch } from '../context/BranchContext';
 
 const PRIMARY = '#e23744';
 
 export default function OrderSuccessScreen({ route }) {
   const { orderId } = route.params || { orderId: 'UNKNOWN' };
   const navigation = useNavigation();
+  const { selectedBranch, BRANCHES } = useBranch();
+  const branchName = BRANCHES.find(b => b.id === selectedBranch)?.name || 'Swad Sadan';
   
   const fade = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(0.5)).current;
@@ -52,6 +55,11 @@ export default function OrderSuccessScreen({ route }) {
               <Ionicons name="time-outline" size={14} color="#059669" style={{marginRight: 4}} />
               <Text style={styles.valHighlight}>{eta} mins</Text>
             </View>
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.row}>
+            <Text style={styles.label}>Preparing at</Text>
+            <Text style={styles.val}>{branchName}</Text>
           </View>
         </View>
       </Animated.View>

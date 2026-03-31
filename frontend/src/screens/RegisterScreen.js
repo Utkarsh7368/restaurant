@@ -61,14 +61,7 @@ export default function RegisterScreen({ navigation }) {
   };
 
   const handleGoogleLogin = async () => {
-    if (isExpoGo) {
-      Alert.alert(
-        "Google Sign-In Unavailable",
-        "This feature only works in your actual APK, not in Expo Go. Please use your EAS Build to test this!"
-      );
-      return;
-    }
-
+    // Google Sign-In is now enabled for standalone APK builds.
     try {
       setBusy(true);
       const { GoogleSignin } = require('@react-native-google-signin/google-signin');
@@ -80,8 +73,8 @@ export default function RegisterScreen({ navigation }) {
     } catch (e) {
       console.log('Google Error:', e);
       Alert.alert(
-        "Google Sign-In Unavailable",
-        "This feature only works in the actual installed app (APK), not in Expo Go. Please use your EAS Build to test this!"
+        "Google Sign-In Error",
+        "There was a problem signing in with Google. Please ensure you are using the installed app (not Expo Go) and that your Google Cloud Console is configured correctly."
       );
     } finally {
       setBusy(false);

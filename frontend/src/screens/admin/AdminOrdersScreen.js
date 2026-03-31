@@ -14,10 +14,12 @@ export default function AdminOrdersScreen() {
   const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [filterBranch, setFilterBranch] = useState('All');
 
   const fetchOrders = async () => {
     try {
       const res = await axios.get(`${API_URL}/admin/orders`, {
+        params: { branch: filterBranch },
         headers: { Authorization: `Bearer ${token}` }
       });
       setOrders(res.data || []);
@@ -60,7 +62,7 @@ export default function AdminOrdersScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchOrders();
-    }, [token])
+    }, [token, filterBranch])
   );
 
   const onRefresh = () => {
@@ -139,6 +141,11 @@ export default function AdminOrdersScreen() {
             <View style={[styles.statusDot, { backgroundColor: statusInfo.color }]} />
             <Text style={[styles.statusText, { color: statusInfo.color }]}>{statusInfo.label}</Text>
           </View>
+        </View>
+
+        <View style={styles.branchTag}>
+          <Ionicons name="location" size={12} color="#718096" />
+          <Text style={styles.branchTagText}>{item.branch || 'Auraiya'}</Text>
         </View>
 
         <View style={styles.itemsBox}>
@@ -235,6 +242,21 @@ export default function AdminOrdersScreen() {
           <Ionicons name="refresh" size={22} color={PRIMARY} />
         </TouchableOpacity>
       </View>
+
+      {/* Branch Filter UI */}
+      <View style={styles.filterSection}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+          {['All', 'Auraiya', 'Dibiyapur'].map(b => (
+            <TouchableOpacity 
+              key={b} 
+              style={[styles.filterPill, filterBranch === b && styles.filterPillActive]}
+              onPress={() => setFilterBranch(b)}
+            >
+              <Text style={[styles.filterText, filterBranch === b && styles.filterTextActive]}>{b}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
       <FlatList
         data={orders}
         keyExtractor={item => item._id}
@@ -269,6 +291,13 @@ const styles = StyleSheet.create({
   title: { fontSize: 26, fontWeight: '900', color: '#1a1a1a', letterSpacing: -0.5 },
   subtitle: { fontSize: 13, color: '#a0aec0', fontWeight: '600', marginTop: 2 },
   refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#fdf2f2', alignItems: 'center', justifyContent: 'center' },
+
+  filterSection: { backgroundColor: '#fff', paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
+  filterRow: { paddingHorizontal: 20 },
+  filterPill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, backgroundColor: '#f7fafc', marginRight: 10, borderWidth: 1, borderColor: '#edf2f7' },
+  filterPillActive: { backgroundColor: PRIMARY, borderColor: PRIMARY },
+  filterText: { fontSize: 13, fontWeight: '700', color: '#718096' },
+  filterTextActive: { color: '#fff' },
   
   list: { padding: 20 },
   
@@ -288,6 +317,9 @@ const styles = StyleSheet.create({
   statusBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 },
   statusDot: { width: 6, height: 6, borderRadius: 3, marginRight: 6 },
   statusText: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
+  
+  branchTag: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, backgroundColor: '#f8fafc', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  branchTagText: { fontSize: 11, fontWeight: '700', color: '#718096', marginLeft: 4 },
   
   itemsBox: { backgroundColor: '#f8fafc', borderRadius: 16, padding: 15, marginBottom: 15 },
   items: { fontSize: 15, color: '#4a5568', fontWeight: '600', lineHeight: 22 },

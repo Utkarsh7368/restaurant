@@ -16,7 +16,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#ffffff",
+        "backgroundColor": "#e23744",
         "foregroundImage": "./assets/adaptive-foreground.png"
       },
       "package": "com.utkarshandroid2001.app2"
@@ -26,7 +26,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "a2473260-6058-412e-a40d-c45e4999ea88"
+        "projectId": "cfc56ef2-b808-466a-b4e1-b600eb825768"
       }
     },
     "plugins": [

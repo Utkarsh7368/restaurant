@@ -8,6 +8,7 @@ import { API_URL } from '../context/AuthContext';
 import axios from 'axios';
 import FoodCard from '../components/FoodCard';
 import { Ionicons } from '@expo/vector-icons';
+import { useBranch } from '../context/BranchContext';
 
 const PRIMARY = '#e23744';
 
@@ -31,10 +32,12 @@ const PopularChip = React.memo(({ item }) => {
 
 // ─── Main HomeScreen ───────────────────────────────────────────
 export default function HomeScreen() {
+  const { selectedBranch, changeBranch, BRANCHES } = useBranch();
   const [MENU_ITEMS, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [activeCat, setCat] = useState('all');
+  const [showPicker, setShowPicker] = useState(false);
   const fade = useRef(new Animated.Value(0)).current;
 
   // Load cache on mount
@@ -86,13 +89,43 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View>
             <Text style={styles.brandName}>Swad Sadan</Text>
-            <Text style={styles.location}>📍 Auraiya • Best in Town</Text>
+            <TouchableOpacity 
+              style={styles.locationContainer} 
+              onPress={() => setShowPicker(!showPicker)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.location}>
+                📍 {BRANCHES.find(b => b.id === selectedBranch)?.city} • Tap to change
+              </Text>
+              <Ionicons name="chevron-down" size={12} color="#a0aec0" style={{marginLeft: 4}} />
+            </TouchableOpacity>
           </View>
           <TouchableOpacity style={styles.ratingPill}>
             <Ionicons name="star" size={14} color="#f59e0b" />
             <Text style={styles.ratingTxt}>5.0</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Branch Picker Dropdown (Simple) */}
+        {showPicker && (
+          <View style={styles.pickerOverlay}>
+            {BRANCHES.map(b => (
+              <TouchableOpacity
+                key={b.id}
+                style={[styles.pickerItem, selectedBranch === b.id && styles.pickerItemActive]}
+                onPress={() => {
+                  changeBranch(b.id);
+                  setShowPicker(false);
+                }}
+              >
+                <Text style={[styles.pickerText, selectedBranch === b.id && styles.pickerTextActive]}>
+                  {b.name}
+                </Text>
+                {selectedBranch === b.id && <Ionicons name="checkmark-circle" size={18} color={PRIMARY} />}
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         {/* Search */}
         <View style={styles.searchContainer}>
@@ -192,7 +225,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20, paddingTop: 10, paddingBottom: 15,
   },
   brandName: { fontSize: 26, fontWeight: '900', color: '#1a1a1a', letterSpacing: -0.8 },
-  location: { fontSize: 13, color: '#a0aec0', fontWeight: '600', marginTop: 1 },
+  locationContainer: { flexDirection: 'row', alignItems: 'center', marginTop: 1 },
+  location: { fontSize: 13, color: '#a0aec0', fontWeight: '600' },
   ratingPill: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: '#fffcf0', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12,
@@ -245,4 +279,30 @@ const styles = StyleSheet.create({
   emptyWrap: { alignItems: 'center', paddingTop: 80 },
   emptyIcon: { fontSize: 50, marginBottom: 15 },
   emptyTxt: { fontSize: 18, fontWeight: '800', color: '#cbd5e0' },
+
+  pickerOverlay: {
+    backgroundColor: '#fff', 
+    borderBottomWidth: 1, 
+    borderBottomColor: '#f0f0f0',
+    paddingBottom: 10,
+  },
+  pickerItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  pickerItemActive: {
+    backgroundColor: '#fff5f5',
+  },
+  pickerText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#4a5568',
+  },
+  pickerTextActive: {
+    color: PRIMARY,
+    fontWeight: '700',
+  },
 });
