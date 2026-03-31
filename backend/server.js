@@ -37,7 +37,9 @@ app.get('/', (req, res) => res.send('Swad Sadan API is running.'));
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/orders', orderRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/api/user', require('./routes/user'));
+app.use('/api/admin', require('./routes/admin'));
+app.use('/api/superadmin', require('./routes/superadmin'));
 app.use('/api/agent', require('./routes/agent'));
 app.use('/api/menu', require('./routes/menu'));
 

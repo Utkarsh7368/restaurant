@@ -20,7 +20,9 @@ const userSchema = new mongoose.Schema({
   secondaryLng: { type: Number, default: 0 },
   secondaryHouseNo: { type: String, default: '' },
   secondaryAddressLabel: { type: String, default: 'Work' },
-  role: { type: String, enum: ['user', 'admin', 'agent'], default: 'user' }
+  // Role & Branch Management
+  role: { type: String, enum: ['user', 'admin', 'superadmin'], default: 'user' },
+  branch: { type: String, enum: ['Auraiya', 'Dibiyapur'], default: 'Auraiya' } // Only for admins
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

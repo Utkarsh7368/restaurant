@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
+const Agent = require('../models/Agent');
 require('dotenv').config();
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -88,20 +89,41 @@ router.post('/register', async (req, res) => {
 // Login
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
-    let user = await User.findOne({ email });
+    const { email, agentId, password } = req.body;
+    
+    // Find user by email OR agentId
+    let user;
+    if (email) {
+      user = await User.findOne({ email });
+    } else if (agentId) {
+      user = await Agent.findOne({ agentId });
+    }
+
     if (!user) return res.status(400).json({ msg: 'Invalid Credentials' });
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ msg: 'Invalid Credentials' });
 
-    const payload = { id: user.id, email: user.email, name: user.name, role: user.role };
+    const payload = { 
+      id: user.id, 
+      email: user.email || '', 
+      agentId: user.agentId || '',
+      name: user.name, 
+      role: user.role,
+      branch: user.branch || ''
+    };
     jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' }, (err, token) => {
       if (err) throw err;
       res.json({ 
         token, 
         user: { 
-          id: user.id, name: user.name, email, phone: user.phone, role: user.role,
+          id: user.id, 
+          name: user.name, 
+          email: user.email, 
+          agentId: user.agentId, 
+          phone: user.phone, 
+          role: user.role,
+          branch: user.branch,
           address: user.address, landmark: user.landmark, lat: user.lat, lng: user.lng
         } 
       });

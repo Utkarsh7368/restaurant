@@ -25,10 +25,14 @@ import OrderSuccessScreen from './src/screens/OrderSuccessScreen';
 import OrdersScreen from './src/screens/OrdersScreen';
 import MyAddressesScreen from './src/screens/MyAddressesScreen';
 
-// Admin Screens
+// Admin & SuperAdmin Screens
 import AdminOrdersScreen from './src/screens/admin/AdminOrdersScreen';
 import AdminMenuScreen from './src/screens/admin/AdminMenuScreen';
 import AdminProfileScreen from './src/screens/admin/AdminProfileScreen';
+import AdminAgentManager from './src/screens/admin/AdminAgentManager';
+import SuperAdminRevenueScreen from './src/screens/admin/SuperAdminRevenueScreen';
+import SuperAdminMenuScreen from './src/screens/admin/SuperAdminMenuScreen';
+
 import AgentOrdersScreen from './src/screens/agent/AgentOrdersScreen';
 
 const Stack = createNativeStackNavigator();
@@ -148,9 +152,40 @@ function AdminTabs() {
       tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
     }}>
       <Tab.Screen name="AdminOrders" component={AdminOrdersScreen} options={{ tabBarIcon: ({focused}) => <TabIcon name="receipt" focused={focused} />, tabBarLabel: 'Orders' }} />
-      <Tab.Screen name="AdminMenu" component={AdminMenuScreen} options={{ tabBarIcon: ({focused}) => <TabIcon name="restaurant" focused={focused} />, tabBarLabel: 'Menu' }} />
+      <Tab.Screen name="AdminAgents" component={AdminAgentManager} options={{ tabBarIcon: ({focused}) => <TabIcon name="people" focused={focused} />, tabBarLabel: 'Agents' }} />
       <Tab.Screen name="AdminProfile" component={AdminProfileScreen} options={{ tabBarIcon: ({focused}) => <TabIcon name="shield-checkmark" focused={focused} />, tabBarLabel: 'Admin' }} />
     </Tab.Navigator>
+  );
+}
+
+// ── SuperAdmin Tabs ──
+function SuperAdminTabs() {
+  return (
+    <Tab.Navigator screenOptions={{
+      headerShown: false,
+      tabBarActiveTintColor: PRIMARY,
+      tabBarInactiveTintColor: '#bbb',
+      tabBarStyle: {
+        backgroundColor: '#fff', borderTopColor: '#f0f0f0', borderTopWidth: 0.5,
+        height: Platform.OS === 'ios' ? 84 : 60,
+        paddingBottom: Platform.OS === 'ios' ? 24 : 6, paddingTop: 6,
+      },
+      tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
+    }}>
+      <Tab.Screen name="SuperRevenue" component={SuperAdminRevenueScreen} options={{ tabBarIcon: ({focused}) => <TabIcon name="bar-chart" focused={focused} />, tabBarLabel: 'Insights' }} />
+      <Tab.Screen name="SuperOrders" component={AdminOrdersScreen} options={{ tabBarIcon: ({focused}) => <TabIcon name="receipt" focused={focused} />, tabBarLabel: 'All Orders' }} />
+      <Tab.Screen name="SuperMenu" component={SuperAdminMenuScreen} options={{ tabBarIcon: ({focused}) => <TabIcon name="restaurant" focused={focused} />, tabBarLabel: 'Menu' }} />
+      <Tab.Screen name="SuperProfile" component={AdminProfileScreen} options={{ tabBarIcon: ({focused}) => <TabIcon name="key" focused={focused} />, tabBarLabel: 'SuperAdmin' }} />
+    </Tab.Navigator>
+  );
+}
+
+// ── SuperAdmin App Stack ──
+function SuperAdminAppStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="SuperAdminTabs" component={SuperAdminTabs} />
+    </Stack.Navigator>
   );
 }
 
@@ -207,7 +242,9 @@ function AuthGate() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {user ? (
-        (user.role === 'admin' || user.isAdmin) ? (
+        (user.role === 'superadmin') ? (
+          <Stack.Screen name="SuperAdminApp" component={SuperAdminAppStack} />
+        ) : (user.role === 'admin' || user.isAdmin) ? (
           <Stack.Screen name="AdminApp" component={AdminAppStack} />
         ) : (user.role === 'agent') ? (
           <Stack.Screen name="AgentApp" component={AgentAppStack} />

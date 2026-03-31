@@ -25,9 +25,14 @@ export default function AdminProfileScreen() {
         <Text style={styles.name}>{user?.name || 'Administrator'}</Text>
         <Text style={styles.email}>{user?.email}</Text>
         <View style={styles.badge}>
-          <Ionicons name="star" size={12} color="#fff" style={{marginRight: 4}} />
-          <Text style={styles.badgeText}>SUPER ADMIN</Text>
+          <Text style={styles.badgeText}>{user?.role?.toUpperCase() || 'ADMIN'}</Text>
         </View>
+        {user?.branch && (
+          <View style={[styles.badge, { backgroundColor: '#fdf2f2', marginTop: 10 }]}>
+            <Ionicons name="location" size={12} color={PRIMARY} style={{marginRight: 4}} />
+            <Text style={[styles.badgeText, { color: PRIMARY }]}>{user?.branch?.toUpperCase()}</Text>
+          </View>
+        )}
       </View>
 
       <TouchableOpacity style={styles.logoutBtn} onPress={logout} activeOpacity={0.8}>

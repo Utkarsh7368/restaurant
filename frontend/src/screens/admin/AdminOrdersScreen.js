@@ -14,7 +14,7 @@ export default function AdminOrdersScreen() {
   const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [filterBranch, setFilterBranch] = useState('All');
+  const [filterBranch, setFilterBranch] = useState(user?.role === 'superadmin' ? 'All' : user?.branch);
 
   const fetchOrders = async () => {
     try {
@@ -182,11 +182,11 @@ export default function AdminOrdersScreen() {
           {item.deliveryAgentId ? (
             <View style={styles.assignedAgent}>
               <View style={styles.agentAvatar}>
-                <Ionicons name="person" size={16} color={PRIMARY} />
+                <Ionicons name="bicycle" size={16} color={PRIMARY} />
               </View>
               <View style={{flex: 1}}>
                 <Text style={styles.agentName}>{item.deliveryAgentId.name}</Text>
-                <Text style={styles.agentRole}>On route</Text>
+                <Text style={styles.agentRole}>ID: {item.deliveryAgentId.agentId}</Text>
               </View>
               <Ionicons name="checkmark-circle" size={20} color="#10b981" />
             </View>
@@ -243,20 +243,22 @@ export default function AdminOrdersScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Branch Filter UI */}
-      <View style={styles.filterSection}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-          {['All', 'Auraiya', 'Dibiyapur'].map(b => (
-            <TouchableOpacity 
-              key={b} 
-              style={[styles.filterPill, filterBranch === b && styles.filterPillActive]}
-              onPress={() => setFilterBranch(b)}
-            >
-              <Text style={[styles.filterText, filterBranch === b && styles.filterTextActive]}>{b}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
+      {/* Branch Filter UI (SuperAdmin Only) */}
+      {user?.role === 'superadmin' && (
+        <View style={styles.filterSection}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+            {['All', 'Auraiya', 'Dibiyapur'].map(b => (
+              <TouchableOpacity 
+                key={b} 
+                style={[styles.filterPill, filterBranch === b && styles.filterPillActive]}
+                onPress={() => setFilterBranch(b)}
+              >
+                <Text style={[styles.filterText, filterBranch === b && styles.filterTextActive]}>{b}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
       <FlatList
         data={orders}
         keyExtractor={item => item._id}

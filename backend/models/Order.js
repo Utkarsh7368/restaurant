@@ -18,7 +18,7 @@ const orderSchema = new mongoose.Schema({
   },
   paymentMethod: { type: String, default: 'COD' },
   isPaid: { type: Boolean, default: false },
-  deliveryAgentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  deliveryAgentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Agent' },
   isDelivered: { type: Boolean, default: false },
   branch: { 
     type: String, 

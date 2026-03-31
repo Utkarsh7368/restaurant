@@ -16,8 +16,8 @@ const auth = (req, res, next) => {
 
 const verifyAdmin = (req, res, next) => {
   auth(req, res, () => {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ msg: 'Access denied, admin only' });
+    if (req.user.role !== 'admin' && req.user.role !== 'superadmin') {
+      return res.status(403).json({ msg: 'Access denied, admin power required' });
     }
     next();
   });
