@@ -20,7 +20,7 @@ export default function ProfileScreen() {
 
   const ROWS = [
     { icon: 'receipt-outline', label: 'My Orders', sub: 'View order history', color: '#3b82f6', bg: '#eff6ff', action: () => navigation.navigate('Orders') },
-    { icon: 'location-outline', label: 'My Addresses', sub: 'Saved delivery spots', color: '#10b981', bg: '#ecfdf5', action: () => navigation.navigate('CompleteProfile') },
+    { icon: 'location-outline', label: 'My Addresses', sub: 'Saved delivery spots', color: '#10b981', bg: '#ecfdf5', action: () => navigation.navigate('MyAddresses') },
     { icon: 'card-outline', label: 'Payments', sub: 'Manage payment methods', color: '#f59e0b', bg: '#fffbeb', action: () => {} },
     { icon: 'notifications-outline', label: 'Notifications', sub: 'Offers and updates', color: '#8b5cf6', bg: '#f5f3ff', action: () => {} },
   ];

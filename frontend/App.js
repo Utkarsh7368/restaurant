@@ -23,6 +23,7 @@ import MapScreen from './src/screens/MapScreen';
 import CompleteProfileScreen from './src/screens/CompleteProfileScreen';
 import OrderSuccessScreen from './src/screens/OrderSuccessScreen';
 import OrdersScreen from './src/screens/OrdersScreen';
+import MyAddressesScreen from './src/screens/MyAddressesScreen';
 
 // Admin Screens
 import AdminOrdersScreen from './src/screens/admin/AdminOrdersScreen';
@@ -127,6 +128,7 @@ function MainAppStack() {
       <Stack.Screen name="MapScreen" component={MapScreen} options={{ gestureEnabled: false }} />
       <Stack.Screen name="CompleteProfile" component={CompleteProfileScreen} options={{ gestureEnabled: false }} />
       <Stack.Screen name="OrderSuccess" component={OrderSuccessScreen} />
+      <Stack.Screen name="MyAddresses" component={MyAddressesScreen} />
     </Stack.Navigator>
   );
 }

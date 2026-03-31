@@ -55,9 +55,10 @@ const MAP_HTML = `
 </html>
 `;
 
-export default function MapScreen() {
+export default function MapScreen({ route }) {
   const { skipOnboarding } = useAuth();
   const navigation = useNavigation();
+  const isSecondary = route.params?.isSecondary || false;
   const webViewRef = React.useRef(null);
   
   const [region, setRegion] = useState({
@@ -159,7 +160,8 @@ export default function MapScreen() {
       navigation.navigate('CompleteProfile', { 
         lat: region.latitude, 
         lng: region.longitude, 
-        address: formatted 
+        address: formatted,
+        isSecondary
       });
     } catch (e) {
       setLoading(false);
@@ -167,7 +169,8 @@ export default function MapScreen() {
       navigation.navigate('CompleteProfile', { 
         lat: region.latitude, 
         lng: region.longitude, 
-        address: '' 
+        address: '',
+        isSecondary
       });
     }
   };

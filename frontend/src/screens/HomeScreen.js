@@ -110,7 +110,7 @@ export default function HomeScreen() {
               activeOpacity={0.7}
             >
               <Text style={styles.location} numberOfLines={1}>
-                📍 {activeAddressType === 'primary' ? 'Home' : 'Secondary'} • {BRANCHES.find(b => b.id === selectedBranch)?.city || 'Set Location'}
+                📍 {activeAddress?.label || 'Set Location'} • {BRANCHES.find(b => b.id === selectedBranch)?.city || 'Set Location'}
               </Text>
               <Ionicons name="chevron-down" size={12} color="#a0aec0" style={{marginLeft: 4}} />
             </TouchableOpacity>
@@ -267,7 +267,7 @@ export default function HomeScreen() {
                   <Ionicons name="location" size={20} color={activeAddressType === 'primary' ? "#fff" : PRIMARY} />
                 </View>
                 <View style={{flex: 1}}>
-                  <Text style={styles.locLabel}>Home (Primary)</Text>
+                  <Text style={styles.locLabel}>{user?.addressLabel || 'Home'}</Text>
                   <Text style={styles.locValue} numberOfLines={2}>{user?.address || 'Set your primary address'}</Text>
                 </View>
                 {activeAddressType === 'primary' && <Ionicons name="checkmark-circle" size={24} color={PRIMARY} />}
@@ -286,7 +286,7 @@ export default function HomeScreen() {
                     <Ionicons name="location" size={20} color={activeAddressType === 'secondary' ? "#fff" : PRIMARY} />
                   </View>
                   <View style={{flex: 1}}>
-                    <Text style={styles.locLabel}>Secondary Address</Text>
+                    <Text style={styles.locLabel}>{user?.secondaryAddressLabel || 'Secondary'}</Text>
                     <Text style={styles.locValue} numberOfLines={2}>{user?.secondaryAddress}</Text>
                   </View>
                   {activeAddressType === 'secondary' && <Ionicons name="checkmark-circle" size={24} color={PRIMARY} />}

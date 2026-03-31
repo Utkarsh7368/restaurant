@@ -63,6 +63,7 @@ export default function CompleteProfileScreen({ route, navigation }) {
         lat,
         lng,
         houseNo,
+        label, // Custom label (Home/Work/Other)
         isSecondary // Backend uses this to determine which fields to fill
       };
 
@@ -99,13 +100,19 @@ export default function CompleteProfileScreen({ route, navigation }) {
               <TextInput style={[styles.input, styles.readOnly]} value={user?.name || ''} editable={false} />
             </View>
 
-            {/* Address Label Display */}
+            {/* Address Label Selector */}
             <View style={styles.inputWrap}>
-              <Text style={styles.label}>Saving As</Text>
-              <View style={[styles.labelPill, styles.labelPillActive]}>
-                <Text style={styles.labelPillTxtActive}>
-                  {isSecondary ? 'Secondary Address' : 'Home (Primary)'}
-                </Text>
+              <Text style={styles.label}>Save Address As</Text>
+              <View style={styles.labelRow}>
+                {['Home', 'Work', 'Other'].map(l => (
+                  <TouchableOpacity 
+                    key={l}
+                    style={[styles.labelPill, label === l && styles.labelPillActive]}
+                    onPress={() => setLabel(l)}
+                  >
+                    <Text style={[styles.labelPillTxt, label === l && styles.labelPillTxtActive]}>{l}</Text>
+                  </TouchableOpacity>
+                ))}
               </View>
             </View>
 

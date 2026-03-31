@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }) => {
         lng: user.secondaryLng,
         houseNo: user.secondaryHouseNo,
         landmark: user.secondaryLandmark,
-        label: 'Secondary'
+        label: user.secondaryAddressLabel || 'Secondary'
       };
     }
     return {
@@ -36,7 +36,7 @@ export const AuthProvider = ({ children }) => {
       lng: user.lng,
       houseNo: user.houseNo,
       landmark: user.landmark,
-      label: 'Primary'
+      label: user.addressLabel || 'Home'
     };
   }, [user, activeAddressType]);
 

@@ -7,7 +7,7 @@ const User = require('../models/User');
 router.put('/update-profile', auth, async (req, res) => {
   try {
     const { 
-      phone, alternatePhone, address, landmark, lat, lng, houseNo,
+      phone, alternatePhone, address, landmark, lat, lng, houseNo, label,
       isSecondary // Flag to update secondary address
     } = req.body;
     
@@ -23,12 +23,14 @@ router.put('/update-profile', auth, async (req, res) => {
       user.secondaryLat = lat !== undefined ? lat : user.secondaryLat;
       user.secondaryLng = lng !== undefined ? lng : user.secondaryLng;
       user.secondaryHouseNo = houseNo !== undefined ? houseNo : user.secondaryHouseNo;
+      user.secondaryAddressLabel = label !== undefined ? label : user.secondaryAddressLabel;
     } else {
       user.address = address !== undefined ? address : user.address;
       user.landmark = landmark !== undefined ? landmark : user.landmark;
       user.lat = lat !== undefined ? lat : user.lat;
       user.lng = lng !== undefined ? lng : user.lng;
       user.houseNo = houseNo !== undefined ? houseNo : user.houseNo;
+      user.addressLabel = label !== undefined ? label : user.addressLabel;
     }
 
     await user.save();
