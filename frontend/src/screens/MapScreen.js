@@ -30,7 +30,7 @@ const MAP_HTML = `
         var map = L.map('map', { 
             zoomControl: false, 
             attributionControl: false 
-        }).setView([28.6139, 77.2090], 16);
+        }).setView([26.4693, 79.5086], 15);
         
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19
@@ -61,8 +61,8 @@ export default function MapScreen() {
   const webViewRef = React.useRef(null);
   
   const [region, setRegion] = useState({
-    latitude: 28.6139,
-    longitude: 77.2090, 
+    latitude: 26.4693,
+    longitude: 79.5086, 
   });
   
   const [loading, setLoading] = useState(false);

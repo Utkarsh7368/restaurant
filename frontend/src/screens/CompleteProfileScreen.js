@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext';
 const PRIMARY = '#e23744';
 
 export default function CompleteProfileScreen({ route, navigation }) {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, addAddress } = useAuth();
   
   // Passed from MapScreen (if present)
   const mapAddress = route.params?.address || '';
@@ -22,6 +22,7 @@ export default function CompleteProfileScreen({ route, navigation }) {
   const [address, setAddress] = useState(mapAddress);
   const [landmark, setLandmark] = useState('');
   const [houseNo, setHouseNo] = useState('');
+  const [label, setLabel] = useState('Home'); // Default label
 
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -52,17 +53,28 @@ export default function CompleteProfileScreen({ route, navigation }) {
     setBusy(true);
     
     try {
-      // Build profile data payload encompassing map coordinates and new form details
-      await updateProfile({ 
-        phone, 
-        alternatePhone: altPhone, 
-        address: `${houseNo}, ${address}, Landmark: ${landmark}`, 
-        lat, 
-        lng, 
-        landmark, 
-        houseNo 
-      });
-      // Force navigation to MainTabs to ensure the user enters the app
+      if (user?.phone) {
+        // User already has a profile, just adding another address
+        await addAddress({ 
+          label,
+          address, 
+          houseNo, 
+          landmark, 
+          lat, 
+          lng 
+        });
+      } else {
+        // Initial profile completion
+        await updateProfile({ 
+          phone, 
+          alternatePhone: altPhone, 
+          address: `${houseNo}, ${address}, Landmark: ${landmark}`, 
+          lat, 
+          lng, 
+          landmark, 
+          houseNo 
+        });
+      }
       navigation.navigate('MainTabs');
     } catch (e) {
       setError(e.message);
@@ -93,6 +105,22 @@ export default function CompleteProfileScreen({ route, navigation }) {
             <View style={styles.inputWrap}>
               <Text style={styles.label}>Full Name</Text>
               <TextInput style={[styles.input, styles.readOnly]} value={user?.name || ''} editable={false} />
+            </View>
+
+            {/* Address Label Selector */}
+            <View style={styles.inputWrap}>
+              <Text style={styles.label}>Save Address As</Text>
+              <View style={styles.labelRow}>
+                {['Home', 'Work', 'Other'].map(l => (
+                  <TouchableOpacity 
+                    key={l}
+                    style={[styles.labelPill, label === l && styles.labelPillActive]}
+                    onPress={() => setLabel(l)}
+                  >
+                    <Text style={[styles.labelPillTxt, label === l && styles.labelPillTxtActive]}>{l}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
 
             <View style={styles.row}>
@@ -192,4 +220,13 @@ const styles = StyleSheet.create({
   },
   btnDisabled: { opacity: 0.5 },
   btnTxt: { color: '#fff', fontSize: 16, fontWeight: '800' },
+
+  labelRow: { flexDirection: 'row', marginTop: 4 },
+  labelPill: {
+    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12,
+    borderWidth: 1, borderColor: '#eee', marginRight: 10, backgroundColor: '#fff'
+  },
+  labelPillActive: { backgroundColor: PRIMARY, borderColor: PRIMARY },
+  labelPillTxt: { fontSize: 13, fontWeight: '700', color: '#6b6b6b' },
+  labelPillTxtActive: { color: '#fff' },
 });

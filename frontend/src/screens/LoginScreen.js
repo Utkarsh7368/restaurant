@@ -23,7 +23,7 @@ export default function LoginScreen({ navigation }) {
   useEffect(() => {
     Animated.timing(fade, { toValue: 1, duration: 400, useNativeDriver: true }).start();
     
-    // Initialize Google Sign-in
+    // Initialize Google Sign-in (ONLY if not in Expo Go)
     if (!isExpoGo) {
       try {
         const { GoogleSignin } = require('@react-native-google-signin/google-signin');
@@ -60,7 +60,14 @@ export default function LoginScreen({ navigation }) {
   };
 
   const handleGoogleLogin = async () => {
-    // Google Sign-In is now enabled for standalone APK builds.
+    if (isExpoGo) {
+      Alert.alert(
+        "Google Sign-In Unavailable",
+        "This feature requires native code and only works in your actual APK, not in Expo Go. Please use your EAS Build to test this!"
+      );
+      return;
+    }
+
     try {
       setBusy(true);
       const { GoogleSignin } = require('@react-native-google-signin/google-signin');

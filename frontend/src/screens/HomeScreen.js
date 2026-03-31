@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TextInput, TouchableOpacity, ScrollView, StatusBar, Animated, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Image, TextInput, TouchableOpacity, ScrollView, StatusBar, Animated, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CATEGORIES } from '../data/menuData';
@@ -9,6 +9,7 @@ import axios from 'axios';
 import FoodCard from '../components/FoodCard';
 import { Ionicons } from '@expo/vector-icons';
 import { useBranch } from '../context/BranchContext';
+import { useAuth } from '../context/AuthContext';
 
 const PRIMARY = '#e23744';
 
@@ -32,12 +33,15 @@ const PopularChip = React.memo(({ item }) => {
 
 // ─── Main HomeScreen ───────────────────────────────────────────
 export default function HomeScreen() {
-  const { selectedBranch, changeBranch, BRANCHES } = useBranch();
+  const { selectedBranch, locationStatus, BRANCHES } = useBranch();
+  const { user, activeAddress, setActiveAddress } = useAuth();
+  const navigation = useNavigation();
   const [MENU_ITEMS, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [activeCat, setCat] = useState('all');
-  const [showPicker, setShowPicker] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
   const fade = useRef(new Animated.Value(0)).current;
 
   // Load cache on mount
@@ -55,16 +59,27 @@ export default function HomeScreen() {
     Animated.timing(fade, { toValue: 1, duration: 400, useNativeDriver: true }).start();
   }, []);
 
-  useFocusEffect(useCallback(() => {
+  const fetchMenu = useCallback(() => {
     axios.get(`${API_URL}/menu`).then(async (res) => {
       setMenuItems(res.data);
       setLoading(false);
+      setRefreshing(false);
       await AsyncStorage.setItem('@swadsadan_menu_cache', JSON.stringify(res.data));
     }).catch(err => {
       console.warn(err);
       setLoading(false);
+      setRefreshing(false);
     });
-  }, []));
+  }, []);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchMenu();      // Refresh Menu
+  }, [fetchMenu]);
+
+  useFocusEffect(useCallback(() => {
+    fetchMenu();
+  }, [fetchMenu]));
 
   const filtered = useCallback(() => {
     let items = MENU_ITEMS;
@@ -91,41 +106,20 @@ export default function HomeScreen() {
             <Text style={styles.brandName}>Swad Sadan</Text>
             <TouchableOpacity 
               style={styles.locationContainer} 
-              onPress={() => setShowPicker(!showPicker)}
+              onPress={() => setShowLocationModal(true)}
               activeOpacity={0.7}
             >
-              <Text style={styles.location}>
-                📍 {BRANCHES.find(b => b.id === selectedBranch)?.city} • Tap to change
+              <Text style={styles.location} numberOfLines={1}>
+                📍 {activeAddress ? `${activeAddress.label} • ${BRANCHES.find(b => b.id === selectedBranch)?.city || 'Checking...'}` : 'Set Location'}
               </Text>
               <Ionicons name="chevron-down" size={12} color="#a0aec0" style={{marginLeft: 4}} />
             </TouchableOpacity>
           </View>
           <TouchableOpacity style={styles.ratingPill}>
             <Ionicons name="star" size={14} color="#f59e0b" />
-            <Text style={styles.ratingTxt}>5.0</Text>
+            <Text style={styles.ratingTxt}>4.9</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Branch Picker Dropdown (Simple) */}
-        {showPicker && (
-          <View style={styles.pickerOverlay}>
-            {BRANCHES.map(b => (
-              <TouchableOpacity
-                key={b.id}
-                style={[styles.pickerItem, selectedBranch === b.id && styles.pickerItemActive]}
-                onPress={() => {
-                  changeBranch(b.id);
-                  setShowPicker(false);
-                }}
-              >
-                <Text style={[styles.pickerText, selectedBranch === b.id && styles.pickerTextActive]}>
-                  {b.name}
-                </Text>
-                {selectedBranch === b.id && <Ionicons name="checkmark-circle" size={18} color={PRIMARY} />}
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
 
         {/* Search */}
         <View style={styles.searchContainer}>
@@ -175,6 +169,14 @@ export default function HomeScreen() {
         maxToRenderPerBatch={5}
         windowSize={3}
         contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh} 
+            tintColor={PRIMARY} 
+            colors={[PRIMARY]}
+          />
+        }
         ListHeaderComponent={
           !isFiltering ? (
             <View>
@@ -212,6 +214,94 @@ export default function HomeScreen() {
           )
         }
       />
+
+      {/* No Address Overlay */}
+      {locationStatus === 'no_address' && (
+        <View style={styles.outOfRangeOverlay}>
+          <Text style={styles.outOfRangeIcon}>📍</Text>
+          <Text style={styles.outOfRangeTitle}>Where should we deliver?</Text>
+          <Text style={styles.outOfRangeSub}>
+            Set your delivery address to see the delicious menu available in your area.
+          </Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={() => navigation.navigate('MapScreen')}>
+            <Text style={styles.retryBtnTxt}>Set Delivery Location</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Out of Range Full Overlay */}
+      {locationStatus === 'out_of_range' && (
+        <View style={styles.outOfRangeOverlay}>
+          <Text style={styles.outOfRangeIcon}>🗺️</Text>
+          <Text style={styles.outOfRangeTitle}>We haven't reached you yet!</Text>
+          <Text style={styles.outOfRangeSub}>
+            Swad Sadan is currently delivering in Auraiya and Dibiyapur. We'll soon expand to your location!
+          </Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={() => navigation.navigate('MapScreen')}>
+            <Text style={styles.retryBtnTxt}>Change Delivery Location</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Location Picker Bottom Sheet (Simple Modal) */}
+      {showLocationModal && (
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={() => setShowLocationModal(false)}
+        >
+          <Animated.View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.modalTitle}>Delivery Address Book</Text>
+            
+            <ScrollView style={{maxHeight: 400}}>
+              {user?.addresses?.map((addr) => {
+                const isActive = activeAddress?._id === addr._id;
+                return (
+                  <TouchableOpacity 
+                    key={addr._id}
+                    style={[styles.currentLocBox, isActive && styles.activeLocBox]}
+                    onPress={() => {
+                      setActiveAddress(addr);
+                      setShowLocationModal(false);
+                    }}
+                  >
+                    <View style={[styles.locIconCirc, isActive && {backgroundColor: PRIMARY}]}>
+                      <Ionicons name="location" size={20} color={isActive ? "#fff" : PRIMARY} />
+                    </View>
+                    <View style={{flex: 1}}>
+                      <Text style={styles.locLabel}>{addr.label}</Text>
+                      <Text style={styles.locValue} numberOfLines={2}>{addr.address}</Text>
+                    </View>
+                    {isActive && <Ionicons name="checkmark-circle" size={24} color={PRIMARY} />}
+                  </TouchableOpacity>
+                );
+              })}
+
+              <TouchableOpacity 
+                style={styles.addNewBtn}
+                onPress={() => {
+                  setShowLocationModal(false);
+                  navigation.navigate('MapScreen');
+                }}
+              >
+                <Ionicons name="add-circle-outline" size={24} color={PRIMARY} />
+                <View style={{marginLeft: 12}}>
+                  <Text style={styles.addNewTxt}>Add New Address</Text>
+                  <Text style={{color: '#a0aec0', fontSize: 11}}>Search on map to save</Text>
+                </View>
+              </TouchableOpacity>
+            </ScrollView>
+
+            <TouchableOpacity 
+              style={styles.modalCloseBtn}
+              onPress={() => setShowLocationModal(false)}
+            >
+              <Text style={styles.modalCloseTxt}>Close</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </TouchableOpacity>
+      )}
     </Animated.View>
   );
 }
@@ -280,6 +370,29 @@ const styles = StyleSheet.create({
   emptyIcon: { fontSize: 50, marginBottom: 15 },
   emptyTxt: { fontSize: 18, fontWeight: '800', color: '#cbd5e0' },
 
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 100,
+  },
+  loadingOverlayTxt: { marginTop: 15, fontSize: 15, color: '#4a5568', fontWeight: '600' },
+
+  outOfRangeOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+    zIndex: 101,
+  },
+  outOfRangeIcon: { fontSize: 80, marginBottom: 24 },
+  outOfRangeTitle: { fontSize: 24, fontWeight: '900', color: '#1a1a1a', textAlign: 'center', marginBottom: 12 },
+  outOfRangeSub: { fontSize: 15, color: '#718096', textAlign: 'center', lineHeight: 22, marginBottom: 32, fontWeight: '500' },
+  retryBtn: { backgroundColor: PRIMARY, paddingHorizontal: 24, height: 50, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  retryBtnTxt: { color: '#fff', fontSize: 15, fontWeight: '800' },
+
   pickerOverlay: {
     backgroundColor: '#fff', 
     borderBottomWidth: 1, 
@@ -304,5 +417,96 @@ const styles = StyleSheet.create({
   pickerTextActive: {
     color: PRIMARY,
     fontWeight: '700',
+  },
+
+  modalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+    zIndex: 200,
+  },
+  modalSheet: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#eee',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#1a1a1a',
+    marginBottom: 24,
+  },
+  currentLocBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#edf2f7',
+    marginBottom: 12,
+  },
+  activeLocBox: {
+    borderColor: PRIMARY,
+    backgroundColor: '#fff5f5'
+  },
+  locIconCirc: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    elevation: 2,
+    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5
+  },
+  locLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#a0aec0',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  locValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2d3748',
+    lineHeight: 20,
+  },
+  addNewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#edf2f7',
+    marginBottom: 24,
+  },
+  addNewTxt: {
+    marginLeft: 12,
+    fontSize: 15,
+    fontWeight: '700',
+    color: PRIMARY,
+  },
+  modalCloseBtn: {
+    alignItems: 'center',
+    padding: 12,
+  },
+  modalCloseTxt: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#a0aec0',
   },
 });

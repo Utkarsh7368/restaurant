@@ -6,6 +6,7 @@ const AuthContext = createContext();
 const TOKEN_KEY = '@swadsadan_token';
 const USER_KEY = '@swadsadan_user';
 const SKIPPED_KEY = '@swadsadan_skipped';
+const ACTIVE_ADDR_ID_KEY = '@swadsadan_active_addr_id';
 
 // NOTE: Replace with your actual local IP or production URL
 export const API_URL = 'https://restaurant-lovat-rho.vercel.app/api'; 
@@ -15,6 +16,7 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [hasSkipped, setHasSkipped] = useState(false);
+  const [activeAddress, setActiveAddressState] = useState(null);
 
   // Check for existing session on app start
   useEffect(() => {
@@ -28,9 +30,15 @@ export const AuthProvider = ({ children }) => {
         const storedSkipped = await AsyncStorage.getItem(SKIPPED_KEY);
         
         if (storedToken && storedUser) {
+          const usr = JSON.parse(storedUser);
           setToken(storedToken);
-          setUser(JSON.parse(storedUser));
+          setUser(usr);
           axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+          
+          // Determine active address
+          const activeId = await AsyncStorage.getItem(ACTIVE_ADDR_ID_KEY);
+          const found = usr.addresses?.find(a => a._id === activeId) || usr.addresses?.[0];
+          setActiveAddressState(found || null);
         }
         if (storedSkipped === 'true') {
           setHasSkipped(true);
@@ -49,6 +57,11 @@ export const AuthProvider = ({ children }) => {
     setToken(tkn);
     setUser(usr);
     axios.defaults.headers.common['Authorization'] = `Bearer ${tkn}`;
+    // Set initial active address
+    if (usr.addresses?.length > 0) {
+      setActiveAddressState(usr.addresses[0]);
+      await AsyncStorage.setItem(ACTIVE_ADDR_ID_KEY, usr.addresses[0]._id);
+    }
   };
 
   // Register
@@ -88,8 +101,48 @@ export const AuthProvider = ({ children }) => {
       const updatedUser = { ...user, ...res.data };
       await AsyncStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
       setUser(updatedUser);
+      // Sync active address if it was just updated (e.g. first address)
+      if (updatedUser.addresses?.length > 0 && !activeAddress) {
+        setActiveAddress(updatedUser.addresses[0]);
+      }
     } catch (err) {
       throw new Error(err.response?.data?.msg || 'Failed to update profile');
+    }
+  };
+
+  const setActiveAddress = async (addr) => {
+    setActiveAddressState(addr);
+    if (addr?._id) {
+      await AsyncStorage.setItem(ACTIVE_ADDR_ID_KEY, addr._id);
+    }
+  };
+
+  const addAddress = async (addrData) => {
+    try {
+      const res = await axios.post(`${API_URL}/user/add-address`, addrData);
+      const updatedUser = res.data;
+      await AsyncStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
+      setUser(updatedUser);
+      // Set the newly added address as active
+      const newAddr = updatedUser.addresses[updatedUser.addresses.length - 1];
+      setActiveAddress(newAddr);
+    } catch (err) {
+      throw new Error(err.response?.data?.msg || 'Failed to add address');
+    }
+  };
+
+  const deleteAddress = async (addrId) => {
+    try {
+      const res = await axios.delete(`${API_URL}/user/delete-address/${addrId}`);
+      const updatedUser = res.data;
+      await AsyncStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
+      setUser(updatedUser);
+      // If deleted active address, switch to another
+      if (activeAddress?._id === addrId) {
+        setActiveAddress(updatedUser.addresses[0] || null);
+      }
+    } catch (err) {
+      throw new Error(err.response?.data?.msg || 'Failed to delete address');
     }
   };
 
@@ -110,7 +163,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, logout, login, register, googleLogin, updateProfile, hasSkipped, skipOnboarding }}>
+    <AuthContext.Provider value={{ 
+      user, token, loading, logout, login, register, googleLogin, 
+      updateProfile, hasSkipped, skipOnboarding,
+      activeAddress, setActiveAddress, addAddress, deleteAddress
+    }}>
       {children}
     </AuthContext.Provider>
   );

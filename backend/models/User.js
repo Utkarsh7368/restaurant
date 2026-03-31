@@ -11,6 +11,14 @@ const userSchema = new mongoose.Schema({
   landmark: { type: String, default: '' },
   lat: { type: Number, default: 0 },
   lng: { type: Number, default: 0 },
+  addresses: [{
+    label: { type: String, default: 'Home' },
+    address: { type: String, required: true },
+    houseNo: { type: String },
+    landmark: { type: String },
+    lat: { type: Number, required: true },
+    lng: { type: Number, required: true }
+  }],
   role: { type: String, enum: ['user', 'admin', 'agent'], default: 'user' }
 }, { timestamps: true });
 
