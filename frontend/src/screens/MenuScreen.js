@@ -10,14 +10,21 @@ import { useFocusEffect } from '@react-navigation/native';
 import { API_URL } from '../context/AuthContext';
 import axios from 'axios';
 import GridFoodCard from '../components/GridFoodCard';
+import { useBranch } from '../context/BranchContext';
+import { useAuth } from '../context/AuthContext';
+import LocationStatusOverlay from '../components/LocationStatusOverlay';
+import { Ionicons } from '@expo/vector-icons';
 
 const PRIMARY = '#e23744';
 
 export default function MenuScreen() {
+  const { selectedBranch, locationStatus, BRANCHES } = useBranch();
+  const { user, activeAddress, activeAddressType, setActiveAddressType } = useAuth();
   const [MENU_ITEMS, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [activeCat, setCat] = useState('all');
+  const [showLocationModal, setShowLocationModal] = useState(false);
   const fade = useRef(new Animated.Value(0)).current;
 
   // Load cache on mount
@@ -82,22 +89,77 @@ export default function MenuScreen() {
           })}
         </ScrollView>
       </SafeAreaView>
-      <FlatList data={data} keyExtractor={i=> i._id} numColumns={2} renderItem={({item})=> <GridFoodCard item={item} />}
-        contentContainerStyle={styles.grid} showsVerticalScrollIndicator={false} columnWrapperStyle={styles.colWrap}
-        ListEmptyComponent={
-          loading ? (
-            <View style={styles.empty}>
-              <ActivityIndicator size="large" color={PRIMARY} />
-              <Text style={[styles.emptyTxt, {marginTop: 10}]}>Loading menu...</Text>
-            </View>
-          ) : (
-            <View style={styles.empty}>
-              <Text style={styles.emptyIcon}>🍽️</Text>
-              <Text style={styles.emptyTxt}>No items</Text>
-            </View>
-          )
-        }
-      />
+      {locationStatus === 'valid' ? (
+        <FlatList data={data} keyExtractor={i=> i._id} numColumns={2} renderItem={({item})=> <GridFoodCard item={item} />}
+          contentContainerStyle={styles.grid} showsVerticalScrollIndicator={false} columnWrapperStyle={styles.colWrap}
+          ListEmptyComponent={
+            loading ? (
+              <View style={styles.empty}>
+                <ActivityIndicator size="large" color={PRIMARY} />
+                <Text style={[styles.emptyTxt, {marginTop: 10}]}>Loading menu...</Text>
+              </View>
+            ) : (
+              <View style={styles.empty}>
+                <Text style={styles.emptyIcon}>🍽️</Text>
+                <Text style={styles.emptyTxt}>No items</Text>
+              </View>
+            )
+          }
+        />
+      ) : (
+        <LocationStatusOverlay 
+          type={locationStatus} 
+          onShowModal={() => setShowLocationModal(true)} 
+        />
+      )}
+
+      {/* Location Modal Sync */}
+      {showLocationModal && (
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={() => setShowLocationModal(false)}
+        >
+          <Animated.View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.modalTitle}>Delivery Location</Text>
+            <ScrollView style={{maxHeight: 400}}>
+              <TouchableOpacity 
+                style={[styles.currentLocBox, activeAddressType === 'primary' && styles.activeLocBox]}
+                onPress={() => { setActiveAddressType('primary'); setShowLocationModal(false); }}
+              >
+                <View style={[styles.locIconCirc, activeAddressType === 'primary' && {backgroundColor: PRIMARY}]}>
+                  <Ionicons name="location" size={20} color={activeAddressType === 'primary' ? "#fff" : PRIMARY} />
+                </View>
+                <View style={{flex: 1}}>
+                  <Text style={styles.locLabel}>{user?.addressLabel || 'Home'}</Text>
+                  <Text style={styles.locValue} numberOfLines={2}>{user?.address}</Text>
+                </View>
+                {activeAddressType === 'primary' && <Ionicons name="checkmark-circle" size={24} color={PRIMARY} />}
+              </TouchableOpacity>
+
+              {user?.secondaryAddress && (
+                <TouchableOpacity 
+                  style={[styles.currentLocBox, activeAddressType === 'secondary' && styles.activeLocBox]}
+                  onPress={() => { setActiveAddressType('secondary'); setShowLocationModal(false); }}
+                >
+                  <View style={[styles.locIconCirc, activeAddressType === 'secondary' && {backgroundColor: PRIMARY}]}>
+                    <Ionicons name="location" size={20} color={activeAddressType === 'secondary' ? "#fff" : PRIMARY} />
+                  </View>
+                  <View style={{flex: 1}}>
+                    <Text style={styles.locLabel}>{user?.secondaryAddressLabel || 'Work'}</Text>
+                    <Text style={styles.locValue} numberOfLines={2}>{user?.secondaryAddress}</Text>
+                  </View>
+                  {activeAddressType === 'secondary' && <Ionicons name="checkmark-circle" size={24} color={PRIMARY} />}
+                </TouchableOpacity>
+              )}
+            </ScrollView>
+            <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setShowLocationModal(false)}>
+              <Text style={styles.modalCloseTxt}>Close</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </TouchableOpacity>
+      )}
     </Animated.View>
   );
 }
@@ -122,4 +184,17 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingTop: 60 },
   emptyIcon: { fontSize: 40, marginBottom: 8 },
   emptyTxt: { fontSize: 14, color: '#aaa' },
+
+  // Modal Styles (to match Home)
+  modalOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end', zIndex: 200 },
+  modalSheet: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
+  modalHandle: { width: 40, height: 4, backgroundColor: '#eee', borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
+  modalTitle: { fontSize: 20, fontWeight: '900', color: '#1a1a1a', marginBottom: 24 },
+  currentLocBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#edf2f7', marginBottom: 12 },
+  activeLocBox: { borderColor: PRIMARY, backgroundColor: '#fff5f5' },
+  locIconCirc: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginRight: 12, elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5 },
+  locLabel: { fontSize: 10, fontWeight: '800', color: '#a0aec0', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 },
+  locValue: { fontSize: 14, fontWeight: '600', color: '#2d3748', lineHeight: 20 },
+  modalCloseBtn: { alignItems: 'center', padding: 12 },
+  modalCloseTxt: { fontSize: 14, fontWeight: '700', color: '#a0aec0' },
 });

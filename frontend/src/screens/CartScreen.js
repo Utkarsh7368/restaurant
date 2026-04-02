@@ -50,7 +50,7 @@ function CartItem({ item }) {
 export default function CartScreen() {
   const { cartItems, cartTotal, clearCart } = useCart();
   const { user } = useAuth();
-  const { selectedBranch } = useBranch();
+  const { selectedBranch, locationStatus } = useBranch();
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
 
@@ -62,6 +62,11 @@ export default function CartScreen() {
         { text: 'Set Location', onPress: () => navigation.navigate('MapScreen') },
         { text: 'Cancel', style: 'cancel' }
       ]);
+      return;
+    }
+
+    if (locationStatus !== 'valid') {
+      Alert.alert('Out of Delivery Range', 'We currently do not deliver to your selected location. Please change your address to place an order.');
       return;
     }
 
@@ -122,12 +127,22 @@ export default function CartScreen() {
       <FlatList data={cartItems} keyExtractor={i=>i._id} renderItem={({item})=> <CartItem item={item} />}
         contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}
         ListFooterComponent={
-          <View style={styles.bill}>
-            <View style={styles.billRow}><Text style={styles.billLabel}>Subtotal</Text><Text style={styles.billVal}>₹{cartTotal}</Text></View>
-            <View style={styles.billRow}><Text style={styles.billLabel}>Delivery</Text><Text style={styles.billVal}>₹{DELIVERY}</Text></View>
-            <View style={styles.billRow}><Text style={styles.billLabel}>Tax (5%)</Text><Text style={styles.billVal}>₹{TAX}</Text></View>
-            <View style={styles.divider} />
-            <View style={styles.billRow}><Text style={styles.billTotal}>Total</Text><Text style={styles.billTotalVal}>₹{GRAND}</Text></View>
+          <View>
+            {locationStatus !== 'valid' && (
+              <View style={styles.outOfRangeWarning}>
+                <Ionicons name="warning" size={16} color="#e53e3e" style={{marginRight: 8}} />
+                <Text style={styles.outOfRangeWarningTxt}>
+                  We don't deliver to your current location yet.
+                </Text>
+              </View>
+            )}
+            <View style={styles.bill}>
+              <View style={styles.billRow}><Text style={styles.billLabel}>Subtotal</Text><Text style={styles.billVal}>₹{cartTotal}</Text></View>
+              <View style={styles.billRow}><Text style={styles.billLabel}>Delivery</Text><Text style={styles.billVal}>₹{DELIVERY}</Text></View>
+              <View style={styles.billRow}><Text style={styles.billLabel}>Tax (5%)</Text><Text style={styles.billVal}>₹{TAX}</Text></View>
+              <View style={styles.divider} />
+              <View style={styles.billRow}><Text style={styles.billTotal}>Total</Text><Text style={styles.billTotalVal}>₹{GRAND}</Text></View>
+            </View>
           </View>
         }
       />
@@ -141,12 +156,22 @@ export default function CartScreen() {
               <Text style={styles.checkAmount}>₹{GRAND}</Text>
             </View>
             <TouchableOpacity 
-              style={[styles.checkoutBtn, loading && styles.checkoutDisabled]} 
+              style={[
+                styles.checkoutBtn, 
+                (loading || locationStatus !== 'valid') && styles.checkoutDisabled,
+                locationStatus !== 'valid' && { backgroundColor: '#718096' }
+              ]} 
               activeOpacity={0.85} 
               onPress={handlePlaceOrder} 
-              disabled={loading}
+              disabled={loading || locationStatus !== 'valid'}
             >
-              {loading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.checkoutTxt}>Place Order →</Text>}
+              {loading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.checkoutTxt}>
+                  {locationStatus === 'valid' ? 'Place Order →' : 'Delivery Unavailable'}
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -233,4 +258,20 @@ const styles = StyleSheet.create({
   },
   checkoutDisabled: { opacity: 0.7 },
   checkoutTxt: { color: '#fff', fontSize: 16, fontWeight: '900', letterSpacing: 0.5 },
+  
+  outOfRangeWarning: {
+    backgroundColor: '#fff5f5',
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#feb2b2'
+  },
+  outOfRangeWarningTxt: {
+    fontSize: 13,
+    color: '#c53030',
+    fontWeight: '700'
+  }
 });

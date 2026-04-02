@@ -15,10 +15,6 @@
       "supportsTablet": true
     },
     "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#e23744",
-        "foregroundImage": "./assets/adaptive-foreground.png"
-      },
       "package": "com.utkarshandroid2001.app2"
     },
     "web": {

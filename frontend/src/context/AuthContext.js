@@ -41,6 +41,18 @@ export const AuthProvider = ({ children }) => {
   }, [user, activeAddressType]);
 
   useEffect(() => {
+    // 🛡️ Request Interceptor: Ensures the token is always attached to every request
+    const interceptor = axios.interceptors.request.use(
+      async (config) => {
+        const storedToken = await AsyncStorage.getItem(TOKEN_KEY);
+        if (storedToken) {
+          config.headers.Authorization = `Bearer ${storedToken}`;
+        }
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
+
     (async () => {
       try {
         fetch(API_URL.replace('/api', '')).catch(() => {});
@@ -52,13 +64,14 @@ export const AuthProvider = ({ children }) => {
         if (storedToken && storedUser) {
           setToken(storedToken);
           setUser(JSON.parse(storedUser));
-          axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
         }
         if (storedSkipped === 'true') setHasSkipped(true);
         if (storedType) setActiveAddressTypeState(storedType);
       } catch (e) { console.warn(e); }
       setLoading(false);
     })();
+
+    return () => axios.interceptors.request.eject(interceptor);
   }, []);
 
   const saveAuthInfo = async (tkn, usr) => {

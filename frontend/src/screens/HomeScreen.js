@@ -10,6 +10,7 @@ import FoodCard from '../components/FoodCard';
 import { Ionicons } from '@expo/vector-icons';
 import { useBranch } from '../context/BranchContext';
 import { useAuth } from '../context/AuthContext';
+import LocationStatusOverlay from '../components/LocationStatusOverlay';
 
 const PRIMARY = '#e23744';
 
@@ -216,34 +217,11 @@ export default function HomeScreen() {
               )
             }
           />
-        ) : locationStatus === 'no_address' ? (
-          <View style={styles.outOfRangeOverlay}>
-            <Text style={styles.outOfRangeIcon}>📍</Text>
-            <Text style={styles.outOfRangeTitle}>Where should we deliver?</Text>
-            <Text style={styles.outOfRangeSub}>
-              Set your delivery address to see the delicious menu available in your area.
-            </Text>
-            <TouchableOpacity style={styles.retryBtn} onPress={() => navigation.navigate('MapScreen')}>
-              <Text style={styles.retryBtnTxt}>Set Delivery Location</Text>
-            </TouchableOpacity>
-          </View>
         ) : (
-          <View style={styles.outOfRangeOverlay}>
-            <Text style={styles.outOfRangeIcon}>🗺️</Text>
-            <Text style={styles.outOfRangeTitle}>We'll get here soon!</Text>
-            <Text style={styles.outOfRangeSub}>
-              Swad Sadan is currently delivering in Auraiya and Dibiyapur. Try switching your address to see the menu.
-            </Text>
-            <TouchableOpacity 
-              style={[styles.retryBtn, {backgroundColor: '#1a1a1a', marginBottom: 12}]} 
-              onPress={() => setShowLocationModal(true)}
-            >
-              <Text style={styles.retryBtnTxt}>Switch Saved Address</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.retryBtn} onPress={() => navigation.navigate('MapScreen')}>
-              <Text style={styles.retryBtnTxt}>Change Location on Map</Text>
-            </TouchableOpacity>
-          </View>
+          <LocationStatusOverlay 
+            type={locationStatus} 
+            onShowModal={() => setShowLocationModal(true)} 
+          />
         )}
       </View>
 

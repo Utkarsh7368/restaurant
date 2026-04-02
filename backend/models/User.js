@@ -25,4 +25,7 @@ const userSchema = new mongoose.Schema({
   branch: { type: String, enum: ['Auraiya', 'Dibiyapur'], default: 'Auraiya' } // Only for admins
 }, { timestamps: true });
 
+userSchema.set('toJSON', { virtuals: true });
+userSchema.set('toObject', { virtuals: true });
+
 module.exports = mongoose.model('User', userSchema);
