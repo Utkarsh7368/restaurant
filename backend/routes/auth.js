@@ -43,13 +43,9 @@ router.post('/google-login', async (req, res) => {
     const payload = { id: user.id, email: user.email, name: user.name, role: user.role };
     jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' }, (err, token) => {
       if (err) throw err;
-      res.json({ 
-        token, 
-        user: { 
-          id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role,
-          address: user.address, landmark: user.landmark, lat: user.lat, lng: user.lng
-        } 
-      });
+      const userObj = user.toObject();
+      delete userObj.password;
+      res.json({ token, user: userObj });
     });
   } catch (err) {
     console.error('Google Login Error:', err.message);
@@ -72,13 +68,9 @@ router.post('/register', async (req, res) => {
     const payload = { id: user.id, email: user.email, name: user.name, role: user.role };
     jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' }, (err, token) => {
       if (err) throw err;
-      res.json({ 
-        token, 
-        user: { 
-          id: user.id, name, email, phone: user.phone, role: user.role,
-          address: user.address, landmark: user.landmark, lat: user.lat, lng: user.lng 
-        } 
-      });
+      const userObj = user.toObject();
+      delete userObj.password;
+      res.json({ token, user: userObj });
     });
   } catch (err) {
     console.error(err.message);
@@ -114,19 +106,9 @@ router.post('/login', async (req, res) => {
     };
     jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' }, (err, token) => {
       if (err) throw err;
-      res.json({ 
-        token, 
-        user: { 
-          id: user.id, 
-          name: user.name, 
-          email: user.email, 
-          agentId: user.agentId, 
-          phone: user.phone, 
-          role: user.role,
-          branch: user.branch,
-          address: user.address, landmark: user.landmark, lat: user.lat, lng: user.lng
-        } 
-      });
+      const userObj = user.toObject();
+      delete userObj.password;
+      res.json({ token, user: userObj });
     });
   } catch (err) {
     console.error(err.message);

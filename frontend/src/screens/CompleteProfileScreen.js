@@ -18,12 +18,12 @@ export default function CompleteProfileScreen({ route, navigation }) {
   const isSecondary = route.params?.isSecondary || false;
   
   const [phone, setPhone] = useState(user?.phone || '');
-  const [altPhone, setAltPhone] = useState('');
+  const [altPhone, setAltPhone] = useState(user?.alternatePhone || '');
   
-  const [address, setAddress] = useState(mapAddress);
-  const [landmark, setLandmark] = useState('');
-  const [houseNo, setHouseNo] = useState('');
-  const [label, setLabel] = useState('Home'); // Default label
+  const [address, setAddress] = useState(isSecondary ? (user?.secondaryAddress || mapAddress) : (user?.address || mapAddress));
+  const [landmark, setLandmark] = useState(isSecondary ? (user?.secondaryLandmark || '') : (user?.landmark || ''));
+  const [houseNo, setHouseNo] = useState(isSecondary ? (user?.secondaryHouseNo || '') : (user?.houseNo || ''));
+  const [label, setLabel] = useState(isSecondary ? (user?.secondaryAddressLabel || 'Work') : (user?.addressLabel || 'Home'));
 
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);

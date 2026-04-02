@@ -159,89 +159,93 @@ export default function HomeScreen() {
         </ScrollView>
       </SafeAreaView>
 
-      {/* Content */}
-      <FlatList
-        data={data}
-        keyExtractor={item => item._id}
-        renderItem={({ item }) => <FoodCard item={item} />}
-        showsVerticalScrollIndicator={false}
-        initialNumToRender={5}
-        maxToRenderPerBatch={5}
-        windowSize={3}
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
-            onRefresh={onRefresh} 
-            tintColor={PRIMARY} 
-            colors={[PRIMARY]}
+      {/* Content area: Either the menu or the status overlay */}
+      <View style={styles.flex}>
+        {locationStatus === 'valid' ? (
+          <FlatList
+            data={data}
+            keyExtractor={item => item._id}
+            renderItem={({ item }) => <FoodCard item={item} />}
+            showsVerticalScrollIndicator={false}
+            initialNumToRender={5}
+            maxToRenderPerBatch={5}
+            windowSize={3}
+            contentContainerStyle={styles.listContent}
+            refreshControl={
+              <RefreshControl 
+                refreshing={refreshing} 
+                onRefresh={onRefresh} 
+                tintColor={PRIMARY} 
+                colors={[PRIMARY]}
+              />
+            }
+            ListHeaderComponent={
+              !isFiltering ? (
+                <View>
+                  {/* Popular horizontal */}
+                  <View style={styles.sectionHead}>
+                    <Text style={styles.sectionTitle}>Popular Today</Text>
+                    <Text style={styles.sectionCount}>{popular.length} dishes</Text>
+                  </View>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.popRow}>
+                    {popular.slice(0, 10).map(item => <PopularChip key={item._id} item={item} />)}
+                  </ScrollView>
+                  <View style={styles.sectionHead}>
+                    <Text style={styles.sectionTitle}>All Dishes</Text>
+                    <Text style={styles.sectionCount}>{data.length} items</Text>
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.sectionHead}>
+                  <Text style={styles.sectionTitle}>Results</Text>
+                  <Text style={styles.sectionCount}>{data.length} found</Text>
+                </View>
+              )
+            }
+            ListEmptyComponent={
+              loading ? (
+                <View style={styles.emptyWrap}>
+                  <ActivityIndicator size="large" color={PRIMARY} />
+                  <Text style={[styles.emptyTxt, {marginTop: 10}]}>Loading fresh menu...</Text>
+                </View>
+              ) : (
+                <View style={styles.emptyWrap}>
+                  <Text style={styles.emptyIcon}>🍽️</Text>
+                  <Text style={styles.emptyTxt}>No dishes found</Text>
+                </View>
+              )
+            }
           />
-        }
-        ListHeaderComponent={
-          !isFiltering ? (
-            <View>
-              {/* Popular horizontal */}
-              <View style={styles.sectionHead}>
-                <Text style={styles.sectionTitle}>Popular</Text>
-                <Text style={styles.sectionCount}>{popular.length} dishes</Text>
-              </View>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.popRow}>
-                {popular.slice(0, 10).map(item => <PopularChip key={item._id} item={item} />)}
-              </ScrollView>
-              <View style={styles.sectionHead}>
-                <Text style={styles.sectionTitle}>All Dishes</Text>
-                <Text style={styles.sectionCount}>{data.length} items</Text>
-              </View>
-            </View>
-          ) : (
-            <View style={styles.sectionHead}>
-              <Text style={styles.sectionTitle}>Results</Text>
-              <Text style={styles.sectionCount}>{data.length} found</Text>
-            </View>
-          )
-        }
-        ListEmptyComponent={
-          loading ? (
-            <View style={styles.emptyWrap}>
-              <ActivityIndicator size="large" color={PRIMARY} />
-              <Text style={[styles.emptyTxt, {marginTop: 10}]}>Loading fresh menu...</Text>
-            </View>
-          ) : (
-            <View style={styles.emptyWrap}>
-              <Text style={styles.emptyIcon}>🍽️</Text>
-              <Text style={styles.emptyTxt}>No dishes found</Text>
-            </View>
-          )
-        }
-      />
-
-      {/* No Address Overlay */}
-      {locationStatus === 'no_address' && (
-        <View style={styles.outOfRangeOverlay}>
-          <Text style={styles.outOfRangeIcon}>📍</Text>
-          <Text style={styles.outOfRangeTitle}>Where should we deliver?</Text>
-          <Text style={styles.outOfRangeSub}>
-            Set your delivery address to see the delicious menu available in your area.
-          </Text>
-          <TouchableOpacity style={styles.retryBtn} onPress={() => navigation.navigate('MapScreen')}>
-            <Text style={styles.retryBtnTxt}>Set Delivery Location</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Out of Range Full Overlay */}
-      {locationStatus === 'out_of_range' && (
-        <View style={styles.outOfRangeOverlay}>
-          <Text style={styles.outOfRangeIcon}>🗺️</Text>
-          <Text style={styles.outOfRangeTitle}>We haven't reached you yet!</Text>
-          <Text style={styles.outOfRangeSub}>
-            Swad Sadan is currently delivering in Auraiya and Dibiyapur. We'll soon expand to your location!
-          </Text>
-          <TouchableOpacity style={styles.retryBtn} onPress={() => navigation.navigate('MapScreen')}>
-            <Text style={styles.retryBtnTxt}>Change Delivery Location</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+        ) : locationStatus === 'no_address' ? (
+          <View style={styles.outOfRangeOverlay}>
+            <Text style={styles.outOfRangeIcon}>📍</Text>
+            <Text style={styles.outOfRangeTitle}>Where should we deliver?</Text>
+            <Text style={styles.outOfRangeSub}>
+              Set your delivery address to see the delicious menu available in your area.
+            </Text>
+            <TouchableOpacity style={styles.retryBtn} onPress={() => navigation.navigate('MapScreen')}>
+              <Text style={styles.retryBtnTxt}>Set Delivery Location</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.outOfRangeOverlay}>
+            <Text style={styles.outOfRangeIcon}>🗺️</Text>
+            <Text style={styles.outOfRangeTitle}>We'll get here soon!</Text>
+            <Text style={styles.outOfRangeSub}>
+              Swad Sadan is currently delivering in Auraiya and Dibiyapur. Try switching your address to see the menu.
+            </Text>
+            <TouchableOpacity 
+              style={[styles.retryBtn, {backgroundColor: '#1a1a1a', marginBottom: 12}]} 
+              onPress={() => setShowLocationModal(true)}
+            >
+              <Text style={styles.retryBtnTxt}>Switch Saved Address</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.retryBtn} onPress={() => navigation.navigate('MapScreen')}>
+              <Text style={styles.retryBtnTxt}>Change Location on Map</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
 
       {/* Location Picker Bottom Sheet (Simple Modal) */}
       {showLocationModal && (
@@ -394,12 +398,11 @@ const styles = StyleSheet.create({
   loadingOverlayTxt: { marginTop: 15, fontSize: 15, color: '#4a5568', fontWeight: '600' },
 
   outOfRangeOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    flex: 1,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 40,
-    zIndex: 101,
   },
   outOfRangeIcon: { fontSize: 80, marginBottom: 24 },
   outOfRangeTitle: { fontSize: 24, fontWeight: '900', color: '#1a1a1a', textAlign: 'center', marginBottom: 12 },
