@@ -68,18 +68,27 @@ export default function LoginScreen({ navigation }) {
 
     try {
       setBusy(true);
-      const { GoogleSignin } = require('@react-native-google-signin/google-signin');
+      const { GoogleSignin, statusCodes } = require('@react-native-google-signin/google-signin');
       await GoogleSignin.hasPlayServices();
       const userInfo = await GoogleSignin.signIn();
       if (userInfo.data.idToken) {
         await googleLogin(userInfo.data.idToken);
       }
     } catch (e) {
+      const { statusCodes } = require('@react-native-google-signin/google-signin');
       console.log('Google Error:', e);
-      Alert.alert(
-        "Google Sign-In Error",
-        "There was a problem signing in with Google. Please ensure you are using the installed app (not Expo Go) and that your Google Cloud Console is configured correctly."
-      );
+      
+      // If user cancels, don't show an alert
+      if (e.code === statusCodes.SIGN_IN_CANCELLED) {
+        console.log('User cancelled Google Sign-In');
+      } else if (e.code === statusCodes.IN_PROGRESS) {
+        console.log('Login already in progress');
+      } else {
+        Alert.alert(
+          "Google Sign-In Error",
+          "There was a problem signing in with Google. Please ensure you are using the installed app (not Expo Go)."
+        );
+      }
     } finally {
       setBusy(false);
     }

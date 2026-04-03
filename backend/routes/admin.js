@@ -43,6 +43,11 @@ router.patch('/order/:id', verifyAdmin, async (req, res) => {
       return res.status(403).json({ msg: 'Unauthorized for this branch' });
     }
 
+    // Role Restriction: Admins cannot mark as 'delivered' (Agent only)
+    if (status === 'delivered') {
+      return res.status(403).json({ msg: 'Only agents can mark orders as delivered' });
+    }
+
     order.status = status;
     await order.save();
     res.json(order);

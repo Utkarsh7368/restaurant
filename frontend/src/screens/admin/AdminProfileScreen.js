@@ -27,7 +27,7 @@ export default function AdminProfileScreen() {
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{user?.role?.toUpperCase() || 'ADMIN'}</Text>
         </View>
-        {user?.branch && (
+        {user?.branch && user?.role === 'admin' && (
           <View style={[styles.badge, { backgroundColor: '#fdf2f2', marginTop: 10 }]}>
             <Ionicons name="location" size={12} color={PRIMARY} style={{marginRight: 4}} />
             <Text style={[styles.badgeText, { color: PRIMARY }]}>{user?.branch?.toUpperCase()}</Text>

@@ -191,38 +191,49 @@ export default function AdminOrdersScreen() {
               <Ionicons name="checkmark-circle" size={20} color="#10b981" />
             </View>
           ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.agentScroll}>
-              {agents.length > 0 ? agents.map(agent => (
-                <TouchableOpacity key={agent._id} style={styles.agentChip} onPress={() => assignAgent(item._id, agent._id)} activeOpacity={0.7}>
-                  <Text style={styles.agentChipText}>{agent.name}</Text>
-                </TouchableOpacity>
-              )) : <Text style={styles.noAgents}>Wait for agents to go online...</Text>}
-            </ScrollView>
+            user?.role === 'admin' ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.agentScroll}>
+                {agents.length > 0 ? agents.map(agent => (
+                  <TouchableOpacity key={agent._id} style={styles.agentChip} onPress={() => assignAgent(item._id, agent._id)} activeOpacity={0.7}>
+                    <Text style={styles.agentChipText}>{agent.name}</Text>
+                  </TouchableOpacity>
+                )) : <Text style={styles.noAgents}>Wait for agents to go online...</Text>}
+              </ScrollView>
+            ) : (
+              <View style={styles.unassignedAgent}>
+                <Ionicons name="help-circle-outline" size={16} color="#a0aec0" />
+                <Text style={styles.unassignedText}>Not yet assigned to any agent</Text>
+              </View>
+            )
           )}
         </View>
 
         <View style={styles.cardActions}>
-          {!item.isPaid && (
-            <TouchableOpacity 
-              style={styles.paidBtn}
-              onPress={() => handleMarkAsPaid(item._id)}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="cash-outline" size={18} color="#10b981" />
-              <Text style={styles.paidBtnText}>Mark Paid</Text>
-            </TouchableOpacity>
-          )}
-          {item.status !== 'delivered' && item.status !== 'cancelled' && (
+          {/* Payment Status Badge (Replaced button with status indicator) */}
+          <View style={[styles.inlineStatus, { backgroundColor: item.isPaid ? '#ecfdf5' : '#fff5f5' }]}>
+            <Ionicons name={item.isPaid ? "cash-outline" : "warning-outline"} size={16} color={item.isPaid ? "#10b981" : "#ef4444"} />
+            <Text style={[styles.inlineStatusText, { color: item.isPaid ? "#10b981" : "#ef4444" }]}>
+              {item.isPaid ? 'PAID' : 'NOT PAID'}
+            </Text>
+          </View>
+
+          {/* Action Button: Only visible to Admins (not Superadmins) and only if not delivered/cancelled */}
+          {user?.role === 'admin' && item.status === 'pending' && (
             <TouchableOpacity 
               style={styles.nextBtn}
-              onPress={() => cycleStatus(item.status, item._id)}
+              onPress={() => updateStatus(item._id, 'preparing')}
               activeOpacity={0.8}
             >
-              <Text style={styles.nextBtnText}>
-                {item.status === 'pending' ? 'Start Preparing' : 'Mark Delivered'}
-              </Text>
-              <Ionicons name="arrow-forward" size={18} color="#fff" />
+              <Text style={styles.nextBtnText}>Start Preparing</Text>
+              <Ionicons name="restaurant-outline" size={18} color="#fff" />
             </TouchableOpacity>
+          )}
+
+          {/* If Superadmin OR if already preparing/delivered, show a status indicator instead of button */}
+          {(user?.role === 'superadmin' || item.status !== 'pending') && (
+             <View style={[styles.statusInfoBox, { borderColor: statusInfo.color }]}>
+                <Text style={[styles.statusInfoTxt, { color: statusInfo.color }]}>{statusInfo.label}</Text>
+             </View>
           )}
         </View>
       </View>
@@ -347,10 +358,14 @@ const styles = StyleSheet.create({
   agentChip: { backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 14, marginRight: 10, borderWidth: 1, borderColor: '#edf2f7', shadowColor: '#000', shadowOpacity: 0.02, elevation: 1 },
   agentChipText: { fontSize: 13, fontWeight: '700', color: '#4a5568' },
   noAgents: { fontSize: 13, color: '#a0aec0', fontStyle: 'italic', paddingVertical: 10 },
+  unassignedAgent: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', padding: 12, borderRadius: 14, borderWidth: 1, borderColor: '#edf2f7', borderStyle: 'dashed' },
+  unassignedText: { marginLeft: 8, fontSize: 12, fontWeight: '600', color: '#a0aec0' },
 
   cardActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#f0f0f0', paddingTop: 15 },
-  paidBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, backgroundColor: '#ecfdf5' },
-  paidBtnText: { marginLeft: 6, fontSize: 13, fontWeight: '800', color: '#10b981' },
+  inlineStatus: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12 },
+  inlineStatusText: { marginLeft: 6, fontSize: 13, fontWeight: '800' },
+  statusInfoBox: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderStyle: 'dashed' },
+  statusInfoTxt: { fontSize: 12, fontWeight: '800', textTransform: 'uppercase' },
   nextBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: PRIMARY, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 14, shadowColor: PRIMARY, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
   nextBtnText: { color: '#fff', fontSize: 14, fontWeight: '800', marginRight: 8 },
 

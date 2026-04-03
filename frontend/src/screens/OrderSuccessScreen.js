@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, StatusBar, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,7 +11,7 @@ export default function OrderSuccessScreen({ route }) {
   const { orderId } = route.params || { orderId: 'UNKNOWN' };
   const navigation = useNavigation();
   const { selectedBranch, BRANCHES } = useBranch();
-  const branchName = BRANCHES.find(b => b.id === selectedBranch)?.name || 'Swad Sadan';
+  const branchName = (BRANCHES.find(b => b.id === selectedBranch)?.name || 'Swad Sadan').split('(')[0].trim();
   
   const fade = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(0.5)).current;
@@ -41,6 +41,7 @@ export default function OrderSuccessScreen({ route }) {
         </View>
         
         <Text style={styles.title}>Order Placed!</Text>
+        
         <Text style={styles.subtitle}>Your delicious meal is being prepared with care and love.</Text>
         
         <View style={styles.card}>
@@ -57,9 +58,14 @@ export default function OrderSuccessScreen({ route }) {
             </View>
           </View>
           <View style={styles.divider} />
-          <View style={styles.row}>
+          <View style={[styles.row, { justifyContent: 'flex-start' }]}>
             <Text style={styles.label}>Preparing at</Text>
-            <Text style={styles.val}>{branchName}</Text>
+            {/* Added a spacer to push the tag to the right but keep it inside the box */}
+            <View style={{ flex: 1 }} />
+            <View style={styles.branchChip}>
+              <Ionicons name="location" size={12} color={PRIMARY} />
+              <Text style={styles.branchChipTxt}>{branchName}</Text>
+            </View>
           </View>
         </View>
       </Animated.View>
@@ -79,16 +85,18 @@ const styles = StyleSheet.create({
   
   iconCircle: { width: 120, height: 120, borderRadius: 60, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginBottom: 30, shadowColor: '#10b981', shadowOpacity: 0.1, shadowRadius: 20, elevation: 5 },
   
-  title: { fontSize: 28, fontWeight: '900', color: '#1a1a1a', textAlign: 'center', marginBottom: 10, letterSpacing: -0.5 },
-  subtitle: { fontSize: 15, color: '#718096', textAlign: 'center', marginBottom: 40, lineHeight: 22, fontWeight: '500' },
+  title: { fontSize: 28, fontWeight: '900', color: '#1a1a1a', textAlign: 'center', marginBottom: 8, letterSpacing: -1 },
+  subtitle: { fontSize: 14, color: '#718096', textAlign: 'center', marginBottom: 40, lineHeight: 22, fontWeight: '500' },
   
   card: { width: '100%', backgroundColor: '#fff', borderRadius: 24, padding: 24, borderWidth: 1, borderColor: '#f0f0f0', shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 10, elevation: 3 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  label: { fontSize: 13, color: '#a0aec0', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
-  val: { fontSize: 16, fontWeight: '900', color: '#1a1a1a' },
+  label: { fontSize: 12, color: '#a0aec0', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
+  val: { fontSize: 15, fontWeight: '900', color: '#1a1a1a' },
   etaBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ecfdf5', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
   valHighlight: { fontSize: 16, fontWeight: '900', color: '#059669' },
-  divider: { height: 1, backgroundColor: '#f0f0f0', marginVertical: 20 },
+  divider: { height: 1, backgroundColor: '#f5f5f5', marginVertical: 20 },
+  branchChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fdf2f2', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
+  branchChipTxt: { color: PRIMARY, fontSize: 14, fontWeight: '900', marginLeft: 6 },
 
   footer: { paddingHorizontal: 30, paddingBottom: 20 },
   btn: { 
