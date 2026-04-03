@@ -5,7 +5,7 @@ const Dish = require('../models/Dish');
 // Public route to get all dishes
 router.get('/', async (req, res) => {
   try {
-    const dishes = await Dish.find({});
+    const dishes = await Dish.find({}).lean();
     res.json(dishes);
   } catch (err) {
     console.error(err.message);

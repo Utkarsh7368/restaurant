@@ -27,9 +27,10 @@ const orderSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-orderSchema.index({ user: 1 });
+orderSchema.index({ user: 1, createdAt: -1 });         // user orders listing
+orderSchema.index({ branch: 1, createdAt: -1 });        // admin orders by branch
+orderSchema.index({ deliveryAgentId: 1, createdAt: -1 });// agent assigned orders
 orderSchema.index({ status: 1 });
-orderSchema.index({ branch: 1 });
-orderSchema.index({ createdAt: -1 });
+orderSchema.index({ branch: 1, status: 1, createdAt: -1 }); // revenue aggregation
 
 module.exports = mongoose.model('Order', orderSchema);

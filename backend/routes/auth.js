@@ -41,12 +41,10 @@ router.post('/google-login', async (req, res) => {
     }
 
     const payload = { id: user.id, email: user.email, name: user.name, role: user.role };
-    jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' }, (err, token) => {
-      if (err) throw err;
-      const userObj = user.toObject();
-      delete userObj.password;
-      res.json({ token, user: userObj });
-    });
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' });
+    const userObj = user.toObject();
+    delete userObj.password;
+    res.json({ token, user: userObj });
   } catch (err) {
     console.error('Google Login Error:', err.message);
     res.status(400).json({ msg: 'Invalid Google Token' });
@@ -57,21 +55,19 @@ router.post('/google-login', async (req, res) => {
 router.post('/register', async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
-    let user = await User.findOne({ email });
+    let user = await User.findOne({ email }).lean();
     if (user) return res.status(400).json({ msg: 'User already exists' });
 
     user = new User({ name, email, password, role: role || 'user' });
-    const salt = await bcrypt.genSalt(10);
+    const salt = await bcrypt.genSalt(8);
     user.password = await bcrypt.hash(password, salt);
     await user.save();
 
     const payload = { id: user.id, email: user.email, name: user.name, role: user.role };
-    jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' }, (err, token) => {
-      if (err) throw err;
-      const userObj = user.toObject();
-      delete userObj.password;
-      res.json({ token, user: userObj });
-    });
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' });
+    const userObj = user.toObject();
+    delete userObj.password;
+    res.json({ token, user: userObj });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
@@ -104,12 +100,10 @@ router.post('/login', async (req, res) => {
       role: user.role,
       branch: user.branch || ''
     };
-    jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' }, (err, token) => {
-      if (err) throw err;
-      const userObj = user.toObject();
-      delete userObj.password;
-      res.json({ token, user: userObj });
-    });
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' });
+    const userObj = user.toObject();
+    delete userObj.password;
+    res.json({ token, user: userObj });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');

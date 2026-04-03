@@ -11,29 +11,35 @@ router.put('/update-profile', auth, async (req, res) => {
       isSecondary // Flag to update secondary address
     } = req.body;
     
-    let user = await User.findById(req.user.id).select('-password');
-    if (!user) return res.status(404).json({ msg: 'User not found' });
-
-    user.phone = phone !== undefined ? phone : user.phone;
-    user.alternatePhone = alternatePhone !== undefined ? alternatePhone : user.alternatePhone;
+    // Build update object (only include fields that are provided)
+    const update = {};
+    if (phone !== undefined) update.phone = phone;
+    if (alternatePhone !== undefined) update.alternatePhone = alternatePhone;
 
     if (isSecondary) {
-      user.secondaryAddress = address !== undefined ? address : user.secondaryAddress;
-      user.secondaryLandmark = landmark !== undefined ? landmark : user.secondaryLandmark;
-      user.secondaryLat = lat !== undefined ? lat : user.secondaryLat;
-      user.secondaryLng = lng !== undefined ? lng : user.secondaryLng;
-      user.secondaryHouseNo = houseNo !== undefined ? houseNo : user.secondaryHouseNo;
-      user.secondaryAddressLabel = label !== undefined ? label : user.secondaryAddressLabel;
+      if (address !== undefined) update.secondaryAddress = address;
+      if (landmark !== undefined) update.secondaryLandmark = landmark;
+      if (lat !== undefined) update.secondaryLat = lat;
+      if (lng !== undefined) update.secondaryLng = lng;
+      if (houseNo !== undefined) update.secondaryHouseNo = houseNo;
+      if (label !== undefined) update.secondaryAddressLabel = label;
     } else {
-      user.address = address !== undefined ? address : user.address;
-      user.landmark = landmark !== undefined ? landmark : user.landmark;
-      user.lat = lat !== undefined ? lat : user.lat;
-      user.lng = lng !== undefined ? lng : user.lng;
-      user.houseNo = houseNo !== undefined ? houseNo : user.houseNo;
-      user.addressLabel = label !== undefined ? label : user.addressLabel;
+      if (address !== undefined) update.address = address;
+      if (landmark !== undefined) update.landmark = landmark;
+      if (lat !== undefined) update.lat = lat;
+      if (lng !== undefined) update.lng = lng;
+      if (houseNo !== undefined) update.houseNo = houseNo;
+      if (label !== undefined) update.addressLabel = label;
     }
 
-    await user.save();
+    // Single DB call: find + update + return new doc
+    const user = await User.findByIdAndUpdate(
+      req.user.id, 
+      { $set: update }, 
+      { new: true, select: '-password' }
+    ).lean();
+
+    if (!user) return res.status(404).json({ msg: 'User not found' });
     res.json(user);
   } catch (err) {
     console.error(err.message);

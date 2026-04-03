@@ -14,5 +14,7 @@ const agentSchema = new mongoose.Schema({
   role: { type: String, default: 'agent' } // Keep role for frontend compatibility
 }, { timestamps: true });
 
-// Ensure we don't have indexes conflicts with User if they share any logic
+// Index for admin agent listing (branch + active filter)
+agentSchema.index({ branch: 1, isActive: 1 });
+
 module.exports = mongoose.model('Agent', agentSchema);

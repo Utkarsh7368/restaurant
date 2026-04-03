@@ -21,9 +21,10 @@ router.get('/orders', verifyAdmin, async (req, res) => {
     }
 
     const orders = await Order.find(filter)
-      .populate('user', ['name', 'phone', 'address', 'landmark'])
-      .populate('deliveryAgentId', ['name', 'phone', 'agentId'])
-      .sort({ createdAt: -1 });
+      .populate('user', 'name phone address landmark')
+      .populate('deliveryAgentId', 'name phone agentId')
+      .sort({ createdAt: -1 })
+      .lean();
     res.json(orders);
   } catch (err) {
     res.status(500).send('Server error');
@@ -97,7 +98,7 @@ router.get('/agents', verifyAdmin, async (req, res) => {
     const filter = { isActive: true };
     if (branch) filter.branch = branch;
 
-    const agents = await Agent.find(filter).select('name phone agentId branch');
+    const agents = await Agent.find(filter).select('name phone agentId branch').lean();
     res.json(agents);
   } catch (err) {
     res.status(500).send('Server error');

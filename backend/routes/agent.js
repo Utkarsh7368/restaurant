@@ -7,8 +7,9 @@ const Order = require('../models/Order');
 router.get('/assigned-orders', verifyAgent, async (req, res) => {
   try {
     const orders = await Order.find({ deliveryAgentId: req.user.id })
-      .populate('user', ['name', 'phone', 'address', 'landmark'])
-      .sort({ createdAt: -1 });
+      .populate('user', 'name phone address landmark')
+      .sort({ createdAt: -1 })
+      .lean();
     res.json(orders);
   } catch (err) {
     console.error(err.message);

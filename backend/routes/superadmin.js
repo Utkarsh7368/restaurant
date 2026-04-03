@@ -55,7 +55,7 @@ router.post('/menu', verifyAdmin, async (req, res) => {
 router.put('/menu/:id', verifyAdmin, async (req, res) => {
   try {
     if (req.user.role !== 'superadmin') return res.status(403).json({ msg: 'Unauthorized' });
-    const dish = await Dish.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const dish = await Dish.findByIdAndUpdate(req.params.id, req.body, { new: true }).lean();
     if (!dish) return res.status(404).json({ msg: 'Dish not found' });
     res.json(dish);
   } catch (err) {

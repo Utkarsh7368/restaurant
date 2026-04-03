@@ -35,8 +35,9 @@ router.get('/user/:id', auth, async (req, res) => {
     }
     
     const orders = await Order.find({ user: req.params.id })
-      .populate('deliveryAgentId', ['name', 'phone'])
-      .sort({ createdAt: -1 });
+      .populate('deliveryAgentId', 'name phone')
+      .sort({ createdAt: -1 })
+      .lean();
     res.json(orders);
   } catch (err) {
     console.error(err.message);

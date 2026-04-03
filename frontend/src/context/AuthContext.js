@@ -77,8 +77,6 @@ export const AuthProvider = ({ children }) => {
   const saveAuthInfo = async (tkn, usr) => {
     await AsyncStorage.setItem(TOKEN_KEY, tkn);
     await AsyncStorage.setItem(USER_KEY, JSON.stringify(usr));
-    await AsyncStorage.removeItem(SKIPPED_KEY);
-    setHasSkipped(false);
     setToken(tkn);
     setUser(usr);
     axios.defaults.headers.common['Authorization'] = `Bearer ${tkn}`;
@@ -124,7 +122,6 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     await AsyncStorage.removeItem(TOKEN_KEY);
     await AsyncStorage.removeItem(USER_KEY);
-    await AsyncStorage.removeItem(SKIPPED_KEY);
     await AsyncStorage.removeItem(ACTIVE_TYPE_KEY);
     delete axios.defaults.headers.common['Authorization'];
     setToken(null);
