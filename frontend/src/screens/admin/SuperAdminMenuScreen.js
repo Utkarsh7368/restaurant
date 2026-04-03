@@ -10,7 +10,7 @@ import { useAuth, API_URL } from '../../context/AuthContext';
 import axios from 'axios';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { CATEGORIES } from '../../data/menuData';
+// import { CATEGORIES } from '../../data/menuData'; // DEPRECATED
 import * as ImagePicker from 'expo-image-picker';
 
 const PRIMARY = '#e23744';
@@ -51,6 +51,7 @@ const AdminDishCard = React.memo(({ dish, openModal, confirmDelete }) => {
 export default function SuperAdminMenuScreen() {
   const { token } = useAuth();
   const [dishes, setDishes] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   
   // Modal states
@@ -79,10 +80,12 @@ export default function SuperAdminMenuScreen() {
 
   const fetchDishes = async () => {
     try {
-      const res = await axios.get(`${API_URL}/menu`);
-      setDishes(res.data || []);
+      const menuRes = await axios.get(`${API_URL}/menu`);
+      const catRes = await axios.get(`${API_URL}/category`);
+      setDishes(menuRes.data || []);
+      setCategories(catRes.data || []);
     } catch (e) {
-      console.warn('Failed to fetch dishes', e);
+      console.warn('Failed to fetch data', e);
     } finally {
       setLoading(false);
     }
@@ -249,7 +252,7 @@ export default function SuperAdminMenuScreen() {
       </View>
 
       <SectionList
-        sections={CATEGORIES.map(cat => ({
+        sections={categories.map(cat => ({
           title: cat.name,
           id: cat.id,
           icon: cat.icon,
@@ -303,7 +306,7 @@ export default function SuperAdminMenuScreen() {
 
               <Text style={styles.label}>Category (Select one)*</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.catPicker}>
-                {CATEGORIES.map(cat => (
+                {categories.map(cat => (
                   <TouchableOpacity 
                     key={cat.id} 
                     onPress={() => setCategory(cat.id)}

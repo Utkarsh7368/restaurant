@@ -8,6 +8,119 @@ import { Ionicons } from '@expo/vector-icons';
 
 const PRIMARY = '#e23744';
 
+// Optimized Memoized Item Component
+const OrderItem = React.memo(({ item, agents, user, assignAgent, updateStatus, getStatusInfo }) => {
+  const itemsString = item.items.map(i => `${i.quantity}x ${i.name}`).join(', ');
+  const customer = item.user || {};
+  const statusInfo = getStatusInfo(item.status);
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View>
+          <Text style={styles.orderId}>Order #{item._id.slice(-6).toUpperCase()}</Text>
+          <Text style={styles.orderDate}>{new Date(item.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+        </View>
+        <View style={[styles.statusBadge, { backgroundColor: statusInfo.bg }]}>
+          <View style={[styles.statusDot, { backgroundColor: statusInfo.color }]} />
+          <Text style={[styles.statusText, { color: statusInfo.color }]}>{statusInfo.label}</Text>
+        </View>
+      </View>
+
+      <View style={styles.branchTag}>
+        <Ionicons name="location" size={12} color="#718096" />
+        <Text style={styles.branchTagText}>{item.branch || 'Auraiya'}</Text>
+      </View>
+
+      <View style={styles.itemsBox}>
+        <Text style={styles.items}>{itemsString}</Text>
+        <View style={styles.priceRow}>
+          <Text style={styles.priceLabel}>Grand Total</Text>
+          <Text style={styles.totalValue}>₹{item.totalAmount}</Text>
+        </View>
+      </View>
+
+      <View style={styles.sectionHeader}>
+        <Ionicons name="person-outline" size={14} color="#a0aec0" />
+        <Text style={styles.sectionTitle}>Customer Details</Text>
+      </View>
+      
+      <View style={styles.customerContent}>
+        <Text style={styles.custName}>{customer.name || 'Walk-in Customer'}</Text>
+        <View style={styles.custDetailRow}>
+          <Ionicons name="call-outline" size={14} color="#718096" />
+          <Text style={styles.custDetailText}>{customer.phone || 'Contact not provided'}</Text>
+        </View>
+        <View style={styles.custDetailRow}>
+          <Ionicons name="location-outline" size={14} color="#718096" />
+          <Text style={styles.custDetailText} numberOfLines={2}>{customer.address || 'Dining In'}</Text>
+        </View>
+      </View>
+      
+      <View style={styles.sectionHeader}>
+        <Ionicons name="bicycle-outline" size={14} color="#a0aec0" />
+        <Text style={styles.sectionTitle}>Delivery Agent</Text>
+      </View>
+
+      <View style={styles.agentBox}>
+        {item.deliveryAgentId ? (
+          <View style={styles.assignedAgent}>
+            <View style={styles.agentAvatar}>
+              <Ionicons name="bicycle" size={16} color={PRIMARY} />
+            </View>
+            <View style={{flex: 1}}>
+              <Text style={styles.agentName}>{item.deliveryAgentId.name}</Text>
+              <Text style={styles.agentRole}>ID: {item.deliveryAgentId.agentId}</Text>
+            </View>
+            <Ionicons name="checkmark-circle" size={20} color="#10b981" />
+          </View>
+        ) : (
+          user?.role === 'admin' ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.agentScroll}>
+              {agents.length > 0 ? agents.map(agent => (
+                <TouchableOpacity key={agent._id} style={styles.agentChip} onPress={() => assignAgent(item._id, agent._id)} activeOpacity={0.7}>
+                  <Text style={styles.agentChipText}>{agent.name}</Text>
+                </TouchableOpacity>
+              )) : <Text style={styles.noAgents}>Wait for agents to go online...</Text>}
+            </ScrollView>
+          ) : (
+            <View style={styles.unassignedAgent}>
+              <Ionicons name="help-circle-outline" size={16} color="#a0aec0" />
+              <Text style={styles.unassignedText}>Not yet assigned to any agent</Text>
+            </View>
+          )
+        )}
+      </View>
+
+      <View style={styles.cardActions}>
+        <View style={[styles.inlineStatus, { backgroundColor: item.isPaid ? '#ecfdf5' : '#fff5f5' }]}>
+          <Ionicons name={item.isPaid ? "cash-outline" : "warning-outline"} size={16} color={item.isPaid ? "#10b981" : "#ef4444"} />
+          <Text style={[styles.inlineStatusText, { color: item.isPaid ? "#10b981" : "#ef4444" }]}>
+            {item.isPaid ? 'PAID' : 'NOT PAID'}
+          </Text>
+        </View>
+
+        {user?.role === 'admin' && item.status === 'pending' && (
+          <TouchableOpacity 
+            style={styles.nextBtn}
+            onPress={() => updateStatus(item._id, 'preparing')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.nextBtnText}>Start Preparing</Text>
+            <Ionicons name="restaurant-outline" size={18} color="#fff" />
+          </TouchableOpacity>
+        )}
+
+        {(user?.role === 'superadmin' || item.status !== 'pending') && (
+           <View style={[styles.statusInfoBox, { borderColor: statusInfo.color }]}>
+              <Text style={[styles.statusInfoTxt, { color: statusInfo.color }]}>{statusInfo.label}</Text>
+           </View>
+        )}
+      </View>
+    </View>
+  );
+});
+
 export default function AdminOrdersScreen() {
   const { user, token } = useAuth();
   const [orders, setOrders] = useState([]);
@@ -43,9 +156,7 @@ export default function AdminOrdersScreen() {
     }
   };
 
-  const assignAgent = async (orderId, agentId) => {
-    const prevOrders = [...orders];
-    // Optimistic: find agent name
+  const assignAgent = useCallback(async (orderId, agentId) => {
     const agent = agents.find(a => a._id === agentId);
     setOrders(prev => prev.map(o => o._id === orderId ? { ...o, deliveryAgentId: agent, status: 'preparing' } : o));
 
@@ -54,10 +165,10 @@ export default function AdminOrdersScreen() {
         headers: { Authorization: `Bearer ${token}` }
       });
     } catch (e) {
-      setOrders(prevOrders);
+      fetchOrders(); // Rollback by refetching
       Alert.alert('Error', 'Failed to assign agent');
     }
-  };
+  }, [agents, token]);
 
   useFocusEffect(
     useCallback(() => {
@@ -70,52 +181,20 @@ export default function AdminOrdersScreen() {
     fetchOrders();
   };
 
-  const updateStatus = async (orderId, newStatus) => {
-    const prevOrders = [...orders]; // For rollback
-    
-    // Optimistic Update: Change status locally immediately
+  const updateStatus = useCallback(async (orderId, newStatus) => {
     setOrders(prev => prev.map(o => o._id === orderId ? { ...o, status: newStatus } : o));
 
     try {
       await axios.patch(`${API_URL}/admin/order/${orderId}`, { status: newStatus }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      // Optionally re-fetch to ensure sync, but the optimistic state is already correct
     } catch (e) {
-      setOrders(prevOrders); // Rollback on error
+      fetchOrders();
       Alert.alert('Error', 'Failed to update order status');
     }
-  };
+  }, [token]);
 
-  const cycleStatus = (currentStatus, orderId) => {
-    if (currentStatus === 'pending') updateStatus(orderId, 'preparing');
-    else if (currentStatus === 'preparing') updateStatus(orderId, 'delivered');
-  };
-
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'pending': return '#f39c12';
-      case 'preparing': return '#3498db';
-      case 'delivered': return '#2ecc71';
-      default: return '#95a5a6';
-    }
-  };
-
-  const handleMarkAsPaid = async (orderId) => {
-    const prevOrders = [...orders];
-    setOrders(prev => prev.map(o => o._id === orderId ? { ...o, isPaid: true } : o));
-
-    try {
-      await axios.patch(`${API_URL}/admin/order/payment/${orderId}`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-    } catch (e) {
-      setOrders(prevOrders);
-      Alert.alert('Error', 'Failed to update payment status');
-    }
-  };
-
-  const getStatusInfo = (status) => {
+  const getStatusInfo = useCallback((status) => {
     switch (status) {
       case 'pending': return { label: 'New Order', color: '#f59e0b', bg: '#fef3c7' };
       case 'preparing': return { label: 'Preparing', color: '#3b82f6', bg: '#dbeafe' };
@@ -123,122 +202,7 @@ export default function AdminOrdersScreen() {
       case 'cancelled': return { label: 'Cancelled', color: '#ef4444', bg: '#fee2e2' };
       default: return { label: status.toUpperCase(), color: '#6b7280', bg: '#f3f4f6' };
     }
-  };
-
-  const renderItem = ({ item }) => {
-    const itemsString = item.items.map(i => `${i.quantity}x ${i.name}`).join(', ');
-    const customer = item.user || {};
-    const statusInfo = getStatusInfo(item.status);
-
-    return (
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <View>
-            <Text style={styles.orderId}>Order #{item._id.slice(-6).toUpperCase()}</Text>
-            <Text style={styles.orderDate}>{new Date(item.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
-          </View>
-          <View style={[styles.statusBadge, { backgroundColor: statusInfo.bg }]}>
-            <View style={[styles.statusDot, { backgroundColor: statusInfo.color }]} />
-            <Text style={[styles.statusText, { color: statusInfo.color }]}>{statusInfo.label}</Text>
-          </View>
-        </View>
-
-        <View style={styles.branchTag}>
-          <Ionicons name="location" size={12} color="#718096" />
-          <Text style={styles.branchTagText}>{item.branch || 'Auraiya'}</Text>
-        </View>
-
-        <View style={styles.itemsBox}>
-          <Text style={styles.items}>{itemsString}</Text>
-          <View style={styles.priceRow}>
-            <Text style={styles.priceLabel}>Grand Total</Text>
-            <Text style={styles.totalValue}>₹{item.totalAmount}</Text>
-          </View>
-        </View>
-
-        <View style={styles.sectionHeader}>
-          <Ionicons name="person-outline" size={14} color="#a0aec0" />
-          <Text style={styles.sectionTitle}>Customer Details</Text>
-        </View>
-        
-        <View style={styles.customerContent}>
-          <Text style={styles.custName}>{customer.name || 'Walk-in Customer'}</Text>
-          <View style={styles.custDetailRow}>
-            <Ionicons name="call-outline" size={14} color="#718096" />
-            <Text style={styles.custDetailText}>{customer.phone || 'Contact not provided'}</Text>
-          </View>
-          <View style={styles.custDetailRow}>
-            <Ionicons name="location-outline" size={14} color="#718096" />
-            <Text style={styles.custDetailText} numberOfLines={2}>{customer.address || 'Dining In'}</Text>
-          </View>
-        </View>
-        
-        <View style={styles.sectionHeader}>
-          <Ionicons name="bicycle-outline" size={14} color="#a0aec0" />
-          <Text style={styles.sectionTitle}>Delivery Agent</Text>
-        </View>
-
-        <View style={styles.agentBox}>
-          {item.deliveryAgentId ? (
-            <View style={styles.assignedAgent}>
-              <View style={styles.agentAvatar}>
-                <Ionicons name="bicycle" size={16} color={PRIMARY} />
-              </View>
-              <View style={{flex: 1}}>
-                <Text style={styles.agentName}>{item.deliveryAgentId.name}</Text>
-                <Text style={styles.agentRole}>ID: {item.deliveryAgentId.agentId}</Text>
-              </View>
-              <Ionicons name="checkmark-circle" size={20} color="#10b981" />
-            </View>
-          ) : (
-            user?.role === 'admin' ? (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.agentScroll}>
-                {agents.length > 0 ? agents.map(agent => (
-                  <TouchableOpacity key={agent._id} style={styles.agentChip} onPress={() => assignAgent(item._id, agent._id)} activeOpacity={0.7}>
-                    <Text style={styles.agentChipText}>{agent.name}</Text>
-                  </TouchableOpacity>
-                )) : <Text style={styles.noAgents}>Wait for agents to go online...</Text>}
-              </ScrollView>
-            ) : (
-              <View style={styles.unassignedAgent}>
-                <Ionicons name="help-circle-outline" size={16} color="#a0aec0" />
-                <Text style={styles.unassignedText}>Not yet assigned to any agent</Text>
-              </View>
-            )
-          )}
-        </View>
-
-        <View style={styles.cardActions}>
-          {/* Payment Status Badge (Replaced button with status indicator) */}
-          <View style={[styles.inlineStatus, { backgroundColor: item.isPaid ? '#ecfdf5' : '#fff5f5' }]}>
-            <Ionicons name={item.isPaid ? "cash-outline" : "warning-outline"} size={16} color={item.isPaid ? "#10b981" : "#ef4444"} />
-            <Text style={[styles.inlineStatusText, { color: item.isPaid ? "#10b981" : "#ef4444" }]}>
-              {item.isPaid ? 'PAID' : 'NOT PAID'}
-            </Text>
-          </View>
-
-          {/* Action Button: Only visible to Admins (not Superadmins) and only if not delivered/cancelled */}
-          {user?.role === 'admin' && item.status === 'pending' && (
-            <TouchableOpacity 
-              style={styles.nextBtn}
-              onPress={() => updateStatus(item._id, 'preparing')}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.nextBtnText}>Start Preparing</Text>
-              <Ionicons name="restaurant-outline" size={18} color="#fff" />
-            </TouchableOpacity>
-          )}
-
-          {/* If Superadmin OR if already preparing/delivered, show a status indicator instead of button */}
-          {(user?.role === 'superadmin' || item.status !== 'pending') && (
-             <View style={[styles.statusInfoBox, { borderColor: statusInfo.color }]}>
-                <Text style={[styles.statusInfoTxt, { color: statusInfo.color }]}>{statusInfo.label}</Text>
-             </View>
-          )}
-        </View>
-      </View>
-    );
-  };
+  }, []);
 
   if (loading) return <SafeAreaView style={styles.center}><ActivityIndicator size="large" color={PRIMARY} /></SafeAreaView>;
 
@@ -273,9 +237,22 @@ export default function AdminOrdersScreen() {
       <FlatList
         data={orders}
         keyExtractor={item => item._id}
-        renderItem={renderItem}
+        renderItem={({ item }) => (
+          <OrderItem 
+            item={item} 
+            agents={agents} 
+            user={user} 
+            assignAgent={assignAgent} 
+            updateStatus={updateStatus} 
+            getStatusInfo={getStatusInfo} 
+          />
+        )}
         contentContainerStyle={styles.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={PRIMARY} />}
+        initialNumToRender={5}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+        removeClippedSubviews={true}
         ListEmptyComponent={
           <View style={styles.emptyWrap}>
             <Ionicons name="receipt-outline" size={64} color="#ccc" />

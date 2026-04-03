@@ -2,7 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, Image, TextInput, TouchableOpacity, ScrollView, StatusBar, Animated, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CATEGORIES } from '../data/menuData';
+// import { CATEGORIES } from '../data/menuData'; // DEPRECATED
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { API_URL } from '../context/AuthContext';
 import axios from 'axios';
@@ -38,6 +38,7 @@ export default function HomeScreen() {
   const { user, activeAddress, activeAddressType, setActiveAddressType } = useAuth();
   const navigation = useNavigation();
   const [MENU_ITEMS, setMenuItems] = useState([]);
+  const [categories, setCategories] = useState([{ id: 'all', name: 'All', icon: '🍽️' }]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
@@ -60,17 +61,25 @@ export default function HomeScreen() {
     Animated.timing(fade, { toValue: 1, duration: 400, useNativeDriver: true }).start();
   }, []);
 
-  const fetchMenu = useCallback(() => {
-    axios.get(`${API_URL}/menu`).then(async (res) => {
-      setMenuItems(res.data);
+  const fetchMenu = useCallback(async () => {
+    try {
+      const [menuRes, catRes] = await Promise.all([
+        axios.get(`${API_URL}/menu`),
+        axios.get(`${API_URL}/category`)
+      ]);
+      
+      setMenuItems(menuRes.data);
+      // Prepend 'All' to dynamic categories
+      setCategories([{ id: 'all', name: 'All', icon: '🍽️' }, ...catRes.data]);
+      
       setLoading(false);
       setRefreshing(false);
-      await AsyncStorage.setItem('@swadsadan_menu_cache', JSON.stringify(res.data));
-    }).catch(err => {
+      await AsyncStorage.setItem('@swadsadan_menu_cache', JSON.stringify(menuRes.data));
+    } catch (err) {
       console.warn(err);
       setLoading(false);
       setRefreshing(false);
-    });
+    }
   }, []);
 
   const onRefresh = useCallback(() => {
@@ -144,7 +153,7 @@ export default function HomeScreen() {
 
         {/* Categories */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.catRow}>
-          {CATEGORIES.map(cat => {
+          {categories.map(cat => {
             const active = activeCat === cat.id;
             return (
               <TouchableOpacity
@@ -168,9 +177,13 @@ export default function HomeScreen() {
             keyExtractor={item => item._id}
             renderItem={({ item }) => <FoodCard item={item} />}
             showsVerticalScrollIndicator={false}
-            initialNumToRender={5}
-            maxToRenderPerBatch={5}
-            windowSize={3}
+            initialNumToRender={6}
+            maxToRenderPerBatch={10}
+            windowSize={5}
+            removeClippedSubviews={true}
+            getItemLayout={(data, index) => (
+              {length: 116, offset: 116 * index, index}
+            )}
             contentContainerStyle={styles.listContent}
             refreshControl={
               <RefreshControl 

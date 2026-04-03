@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +9,7 @@ const PRIMARY = '#e23744';
 
 export default function AdminProfileScreen() {
   const { user, logout } = useAuth();
+  const navigation = useNavigation();
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -33,6 +35,20 @@ export default function AdminProfileScreen() {
             <Text style={[styles.badgeText, { color: PRIMARY }]}>{user?.branch?.toUpperCase()}</Text>
           </View>
         )}
+      </View>
+
+      <View style={styles.menuGrid}>
+        <TouchableOpacity 
+          style={styles.menuItem} 
+          onPress={() => navigation.navigate('AdminCategory')}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.menuIconWrap, { backgroundColor: '#fdf2f2' }]}>
+            <Ionicons name="grid-outline" size={24} color={PRIMARY} />
+          </View>
+          <Text style={styles.menuItemTitle}>Manage Categories</Text>
+          <Ionicons name="chevron-forward" size={16} color="#cbd5e0" />
+        </TouchableOpacity>
       </View>
 
       <TouchableOpacity style={styles.logoutBtn} onPress={logout} activeOpacity={0.8}>
@@ -83,5 +99,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     shadowColor: PRIMARY, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 10, elevation: 5 
   },
-  logoutText: { color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: 0.5 }
+  logoutText: { color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: 0.5 },
+  
+  menuGrid: { paddingHorizontal: 20, marginBottom: 30 },
+  menuItem: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: '#fff', 
+    padding: 16, 
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.02, elevation: 2
+  },
+  menuIconWrap: { width: 44, height: 44, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginRight: 16 },
+  menuItemTitle: { flex: 1, fontSize: 16, fontWeight: '700', color: '#1a1a1a' }
 });

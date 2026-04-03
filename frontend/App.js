@@ -30,6 +30,7 @@ import AdminOrdersScreen from './src/screens/admin/AdminOrdersScreen';
 import AdminMenuScreen from './src/screens/admin/AdminMenuScreen';
 import AdminProfileScreen from './src/screens/admin/AdminProfileScreen';
 import AdminAgentManager from './src/screens/admin/AdminAgentManager';
+import AdminCategoryScreen from './src/screens/admin/AdminCategoryScreen';
 import SuperAdminRevenueScreen from './src/screens/admin/SuperAdminRevenueScreen';
 import SuperAdminMenuScreen from './src/screens/admin/SuperAdminMenuScreen';
 
@@ -186,6 +187,7 @@ function SuperAdminAppStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="SuperAdminTabs" component={SuperAdminTabs} />
+      <Stack.Screen name="AdminCategory" component={AdminCategoryScreen} />
     </Stack.Navigator>
   );
 }
@@ -195,6 +197,7 @@ function AdminAppStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="AdminTabs" component={AdminTabs} />
+      <Stack.Screen name="AdminCategory" component={AdminCategoryScreen} />
     </Stack.Navigator>
   );
 }

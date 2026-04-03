@@ -73,6 +73,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/superadmin', require('./routes/superadmin'));
 app.use('/api/agent', require('./routes/agent'));
 app.use('/api/menu', require('./routes/menu'));
+app.use('/api/category', require('./routes/category'));
 
 const PORT = process.env.PORT || 5000;
 if (process.env.NODE_ENV !== 'production') {

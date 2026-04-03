@@ -8,6 +8,72 @@ import { Ionicons } from '@expo/vector-icons';
 
 const PRIMARY = '#e23744';
 
+// Optimized Memoized Item Component
+const AgentOrderItem = React.memo(({ item, markPaid, markDelivered, openMaps }) => {
+  const customer = item.user || {};
+  const itemsString = item.items.map(i => `${i.quantity}x ${i.name}`).join(', ');
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <Text style={styles.orderId}>#{item._id.slice(-6).toUpperCase()}</Text>
+        <View style={{flexDirection: 'row'}}>
+          {item.isPaid ? (
+            <View style={[styles.badge, { backgroundColor: '#2ecc71', marginRight: 6 }]}>
+              <Text style={styles.badgeText}>PAID</Text>
+            </View>
+          ) : (
+            <View style={[styles.badge, { backgroundColor: '#e74c3c', marginRight: 6 }]}>
+              <Text style={styles.badgeText}>UNPAID</Text>
+            </View>
+          )}
+          <View style={[styles.badge, { backgroundColor: item.status === 'delivered' ? '#2ecc71' : '#3498db' }]}>
+            <Text style={styles.badgeText}>{item.status.toUpperCase()}</Text>
+          </View>
+        </View>
+      </View>
+
+      <Text style={styles.items}>{itemsString}</Text>
+      <View style={styles.divider} />
+
+      <View style={styles.row}>
+        <Ionicons name="person-outline" size={16} color="#666" />
+        <Text style={styles.infoText}>{customer.name}</Text>
+      </View>
+      <View style={styles.row}>
+        <Ionicons name="call-outline" size={16} color="#666" />
+        <TouchableOpacity onPress={() => Linking.openURL(`tel:${customer.phone}`)}>
+          <Text style={[styles.infoText, {color: PRIMARY, fontWeight: '700'}]}>{customer.phone}</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.row}>
+        <Ionicons name="location-outline" size={16} color="#666" />
+        <Text style={styles.infoText}>{customer.address}</Text>
+      </View>
+
+      <TouchableOpacity style={styles.mapsBtn} onPress={() => openMaps(customer.address)}>
+        <Ionicons name="map-outline" size={18} color="#fff" />
+        <Text style={styles.mapsBtnText}>Navigate to Customer</Text>
+      </TouchableOpacity>
+
+      <View style={styles.divider} />
+
+      <View style={styles.actions}>
+        {!item.isPaid && (
+          <TouchableOpacity style={styles.payBtn} onPress={() => markPaid(item._id)}>
+            <Text style={styles.actionBtnText}>Mark Paid</Text>
+          </TouchableOpacity>
+        )}
+        {item.status !== 'delivered' && (
+          <TouchableOpacity style={styles.deliverBtn} onPress={() => markDelivered(item._id)}>
+            <Text style={styles.actionBtnText}>Mark Delivered</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+});
+
 export default function AgentOrdersScreen() {
   const { token } = useAuth();
   const [orders, setOrders] = useState([]);
@@ -31,7 +97,7 @@ export default function AgentOrdersScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchAssignedOrders();
-    }, [])
+    }, [token])
   );
 
   const onRefresh = () => {
@@ -39,8 +105,7 @@ export default function AgentOrdersScreen() {
     fetchAssignedOrders();
   };
 
-  const markDelivered = async (orderId) => {
-    const prevOrders = [...orders];
+  const markDelivered = useCallback(async (orderId) => {
     setOrders(prev => prev.map(o => o._id === orderId ? { ...o, status: 'delivered', isDelivered: true } : o));
 
     try {
@@ -48,13 +113,12 @@ export default function AgentOrdersScreen() {
         headers: { Authorization: `Bearer ${token}` }
       });
     } catch (e) {
-      setOrders(prevOrders);
+      fetchAssignedOrders();
       Alert.alert('Error', 'Failed to update delivery status');
     }
-  };
+  }, [token]);
 
-  const markPaid = async (orderId) => {
-    const prevOrders = [...orders];
+  const markPaid = useCallback(async (orderId) => {
     setOrders(prev => prev.map(o => o._id === orderId ? { ...o, isPaid: true } : o));
 
     try {
@@ -62,83 +126,18 @@ export default function AgentOrdersScreen() {
         headers: { Authorization: `Bearer ${token}` }
       });
     } catch (e) {
-      setOrders(prevOrders);
+      fetchAssignedOrders();
       Alert.alert('Error', 'Failed to update payment status');
     }
-  };
+  }, [token]);
 
-  const openMaps = (address) => {
+  const openMaps = useCallback((address) => {
     const url = Platform.select({
       ios: `maps:0,0?q=${address}`,
       android: `geo:0,0?q=${address}`
     });
     Linking.openURL(url).catch(() => Alert.alert('Error', 'Could not open maps'));
-  };
-
-  const renderItem = ({ item }) => {
-    const customer = item.user || {};
-    const itemsString = item.items.map(i => `${i.quantity}x ${i.name}`).join(', ');
-
-    return (
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.orderId}>#{item._id.slice(-6).toUpperCase()}</Text>
-          <View style={{flexDirection: 'row'}}>
-            {item.isPaid ? (
-              <View style={[styles.badge, { backgroundColor: '#2ecc71', marginRight: 6 }]}>
-                <Text style={styles.badgeText}>PAID</Text>
-              </View>
-            ) : (
-              <View style={[styles.badge, { backgroundColor: '#e74c3c', marginRight: 6 }]}>
-                <Text style={styles.badgeText}>UNPAID</Text>
-              </View>
-            )}
-            <View style={[styles.badge, { backgroundColor: item.status === 'delivered' ? '#2ecc71' : '#3498db' }]}>
-              <Text style={styles.badgeText}>{item.status.toUpperCase()}</Text>
-            </View>
-          </View>
-        </View>
-
-        <Text style={styles.items}>{itemsString}</Text>
-        <View style={styles.divider} />
-
-        <View style={styles.row}>
-          <Ionicons name="person-outline" size={16} color="#666" />
-          <Text style={styles.infoText}>{customer.name}</Text>
-        </View>
-        <View style={styles.row}>
-          <Ionicons name="call-outline" size={16} color="#666" />
-          <TouchableOpacity onPress={() => Linking.openURL(`tel:${customer.phone}`)}>
-            <Text style={[styles.infoText, {color: PRIMARY, fontWeight: '700'}]}>{customer.phone}</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.row}>
-          <Ionicons name="location-outline" size={16} color="#666" />
-          <Text style={styles.infoText}>{customer.address}</Text>
-        </View>
-
-        <TouchableOpacity style={styles.mapsBtn} onPress={() => openMaps(customer.address)}>
-          <Ionicons name="map-outline" size={18} color="#fff" />
-          <Text style={styles.mapsBtnText}>Navigate to Customer</Text>
-        </TouchableOpacity>
-
-        <View style={styles.divider} />
-
-        <View style={styles.actions}>
-          {!item.isPaid && (
-            <TouchableOpacity style={styles.payBtn} onPress={() => markPaid(item._id)}>
-              <Text style={styles.actionBtnText}>Mark Paid</Text>
-            </TouchableOpacity>
-          )}
-          {item.status !== 'delivered' && (
-            <TouchableOpacity style={styles.deliverBtn} onPress={() => markDelivered(item._id)}>
-              <Text style={styles.actionBtnText}>Mark Delivered</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-    );
-  };
+  }, []);
 
   if (loading) return <SafeAreaView style={styles.center}><ActivityIndicator size="large" color={PRIMARY} /></SafeAreaView>;
 
@@ -150,9 +149,20 @@ export default function AgentOrdersScreen() {
       <FlatList
         data={orders}
         keyExtractor={item => item._id}
-        renderItem={renderItem}
+        renderItem={({ item }) => (
+          <AgentOrderItem 
+            item={item} 
+            markPaid={markPaid} 
+            markDelivered={markDelivered} 
+            openMaps={openMaps} 
+          />
+        )}
         contentContainerStyle={styles.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={PRIMARY} />}
+        initialNumToRender={5}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+        removeClippedSubviews={true}
         ListEmptyComponent={
           <View style={styles.emptyWrap}>
             <Ionicons name="bicycle-outline" size={80} color="#eee" />
