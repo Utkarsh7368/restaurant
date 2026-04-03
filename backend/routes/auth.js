@@ -40,7 +40,7 @@ router.post('/google-login', async (req, res) => {
       await user.save();
     }
 
-    const payload = { id: user.id, email: user.email, name: user.name, role: user.role };
+    const payload = { id: user._id, email: user.email, name: user.name, role: user.role };
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' });
     const userObj = user.toObject();
     delete userObj.password;
@@ -63,7 +63,7 @@ router.post('/register', async (req, res) => {
     user.password = await bcrypt.hash(password, salt);
     await user.save();
 
-    const payload = { id: user.id, email: user.email, name: user.name, role: user.role };
+    const payload = { id: user._id, email: user.email, name: user.name, role: user.role };
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' });
     const userObj = user.toObject();
     delete userObj.password;
@@ -93,7 +93,7 @@ router.post('/login', async (req, res) => {
     if (!isMatch) return res.status(400).json({ msg: 'Invalid Credentials' });
 
     const payload = { 
-      id: user.id, 
+      id: user._id, 
       email: user.email || '', 
       agentId: user.agentId || '',
       name: user.name, 

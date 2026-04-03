@@ -24,7 +24,8 @@ router.patch('/order/deliver/:id', verifyAgent, async (req, res) => {
     if (!order) return res.status(404).json({ msg: 'Order not found' });
     
     // Safety check: only assigned agent can deliver
-    if (order.deliveryAgentId.toString() !== req.user.id) {
+    if (!order.deliveryAgentId || !order.deliveryAgentId.equals(req.user.id)) {
+      console.log(`Auth failed for agent ${req.user.id} on order ${order._id}. Assigned: ${order.deliveryAgentId}`);
       return res.status(403).json({ msg: 'Not assigned to this order' });
     }
 
@@ -33,7 +34,7 @@ router.patch('/order/deliver/:id', verifyAgent, async (req, res) => {
     await order.save();
     res.json(order);
   } catch (err) {
-    console.error(err.message);
+    console.error('Deliver Error:', err.message);
     res.status(500).send('Server error');
   }
 });
@@ -44,7 +45,9 @@ router.patch('/order/pay/:id', verifyAgent, async (req, res) => {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ msg: 'Order not found' });
     
-    if (order.deliveryAgentId.toString() !== req.user.id) {
+    // Check if deliveryAgentId exists and matches
+    if (!order.deliveryAgentId || !order.deliveryAgentId.equals(req.user.id)) {
+      console.log(`Payment check failed for agent ${req.user.id}. order.deliveryAgentId: ${order.deliveryAgentId}`);
       return res.status(403).json({ msg: 'Not assigned to this order' });
     }
 
@@ -52,7 +55,7 @@ router.patch('/order/pay/:id', verifyAgent, async (req, res) => {
     await order.save();
     res.json(order);
   } catch (err) {
-    console.error(err.message);
+    console.error('Pay Error:', err.message);
     res.status(500).send('Server error');
   }
 });
